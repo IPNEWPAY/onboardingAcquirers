@@ -929,10 +929,16 @@ function addUnreserved(){
 function showBuildErr(msg){const b=document.getElementById('build-err');b.textContent='⚠️ '+msg;b.style.display='block'}
 
 function doBuild(){
-  document.getElementById('build-err').style.display='none';
-  document.getElementById('build-result').innerHTML='';
+  console.log('[doBuild] iniciando');
+  var errEl = document.getElementById('build-err');
+  var resEl = document.getElementById('build-result');
+  if(!errEl){ console.error('[doBuild] NO EXISTE build-err'); alert('Error: falta build-err en DOM'); return; }
+  if(!resEl){ console.error('[doBuild] NO EXISTE build-result'); alert('Error: falta build-result en DOM'); return; }
+  errEl.style.display='none';
+  resEl.innerHTML='';
 
   const name=gv('f59'), city=gv('f60');
+  console.log('[doBuild] name='+name+' city='+city);
   if(!name){showBuildErr('Nombre del comercio obligatorio (campo 59)');return}
   if(!city){showBuildErr('Ciudad obligatoria (campo 60)');return}
   const isDyn=gv('f01')==='12';
@@ -1019,6 +1025,7 @@ function doBuild(){
 
   if(s.length>512) document.getElementById('build-err').innerHTML='⚠️ El payload supera 512 chars ('+s.length+'). Según EMV spec §4.1 es recomendable no excederlo.';
 
+  console.log('[doBuild] string generado, len='+s.length+' s='+s.substring(0,50));
   document.getElementById('build-result').innerHTML=`
     <div class="card" style="margin-top:12px">
       <div class="card-title">✅ QR Generado — ${s.length} chars ${s.length>512?'<span style="color:var(--warn)">⚠️ >512</span>':''}</div>
