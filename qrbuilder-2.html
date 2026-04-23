@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>QR Builder – Transferencias 3.0 Argentina</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Sora:wght@300;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+:root{
+  --bg:#0a0e1a;--card:#161f32;--border:#1e2d45;
+  --accent:#00d4aa;--accent2:#3b82f6;--warn:#f59e0b;--err:#ef4444;--ok:#22c55e;
+  --text:#e2e8f0;--muted:#64748b;
+  --mono:'IBM Plex Mono',monospace;--sans:'Sora',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;font-size:14px}
+header{background:linear-gradient(135deg,#0d1b2e,#0a1628,#061220);border-bottom:1px solid var(--border);padding:20px 14px 16px;position:relative;overflow:hidden}
+header::before{content:'';position:absolute;top:-40px;right:-40px;width:240px;height:240px;background:radial-gradient(circle,rgba(0,212,170,.12) 0%,transparent 70%);border-radius:50%}
+.logo-badge{display:inline-block;background:var(--accent);color:#000;font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.08em;margin-bottom:7px}
+.logo-badge2{display:inline-block;background:#1e2d45;color:var(--muted);font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.06em;margin-left:6px}
+h1{font-size:clamp(18px,5vw,26px);font-weight:800;line-height:1.2}
+h1 span{color:var(--accent)}
+.subtitle{color:var(--muted);font-size:11px;margin-top:4px}
+.tabs-nav{display:flex;flex-wrap:wrap;background:#0d1422;border-bottom:2px solid var(--border)}
+.tab-btn{flex:1;min-width:calc(33% - 2px);padding:10px 4px;font-size:10px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:var(--sans);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;white-space:nowrap;text-align:center}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);background:#00d4aa08}
+.tab-btn:hover:not(.active){color:var(--text)}
+#app{padding:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.card-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.etag{background:#00d4aa22;color:var(--accent);font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid #00d4aa33}
+.etag2{background:#3b82f622;color:var(--accent2);font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid #3b82f633}
+.etag-w{background:#f59e0b22;color:var(--warn);font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid #f59e0b33}
+.cimpra-badge{display:inline-flex;align-items:center;gap:4px;background:#1e2d45;border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--muted);font-family:var(--mono)}
+.field{margin-bottom:12px}
+.field label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:10px;background:#1e2d45;color:var(--accent2);padding:1px 6px;border-radius:3px;flex-shrink:0}
+.hint{color:var(--muted);font-size:10px;font-weight:300}
+input,select,textarea{width:100%;padding:8px 11px;background:#0d1625;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--sans);outline:none;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select option{background:var(--bg)}
+textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#1e2d45;border-radius:11px;transition:.2s}
+.slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#64748b;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:#00d4aa33;border:1px solid var(--accent)}
+.toggle input:checked+.slider::before{transform:translateX(18px);background:var(--accent)}
+.build-btn{background:linear-gradient(135deg,var(--accent),#00a88a);color:#000;border:none;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);width:100%;margin-top:4px;transition:.15s;letter-spacing:.04em}
+.build-btn:active{transform:scale(.98)}
+.copy-btn{background:var(--accent);color:#000;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);width:100%}
+.copy-btn:active{transform:scale(.97)}
+.scan-btn{background:var(--card);border:1px dashed var(--accent);color:var(--accent);border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);width:100%;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
+.scan-btn:hover{background:#00d4aa11}
+.stop-btn{background:#ef444415;border:1px solid #ef444440;color:#fca5a5;border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);width:100%;margin-bottom:8px}
+.add-btn{background:transparent;border:1px dashed var(--border);color:var(--muted);border-radius:8px;padding:8px;font-size:12px;cursor:pointer;font-family:var(--sans);width:100%;margin-top:4px;transition:.2s}
+.add-btn:hover{border-color:var(--accent);color:var(--accent)}
+.rm-btn{background:transparent;border:none;color:var(--err);cursor:pointer;font-size:16px;padding:0 6px;line-height:1;flex-shrink:0}
+.qr-zone{display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px 0}
+/* #qr-canvas: estilos aplicados inline */
+.string-box{background:#0d1625;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:10px;color:var(--accent);word-break:break-all;line-height:1.9;width:100%}
+.err-box{background:#ef444415;border:1px solid #ef444440;color:#fca5a5;border-radius:8px;padding:9px 13px;font-size:12px;margin-bottom:10px}
+.alert{border-radius:8px;padding:9px 13px;font-size:12px;margin-bottom:10px;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+.alert.info{background:#3b82f615;border:1px solid #3b82f630;color:#93c5fd}
+.alert.warn{background:#f59e0b15;border:1px solid #f59e0b30;color:#fcd34d}
+.alert.ok{background:#22c55e15;border:1px solid #22c55e30;color:#86efac}
+#scanner-wrapper{display:none;position:relative;width:100%;border-radius:12px;overflow:hidden;margin-bottom:10px;background:#000}
+#scanner-video{width:100%;display:block;border-radius:12px;max-height:260px;object-fit:cover}
+#scanner-canvas{display:none}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:170px;height:170px;border:2px solid var(--accent);border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative}
+.scan-line{position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanline 2s ease-in-out infinite;top:10%}
+@keyframes scanline{0%,100%{top:10%}50%{top:85%}}
+.scan-status{font-size:11px;color:var(--muted);text-align:center;margin-bottom:7px;min-height:15px;line-height:1.5}
+.divider{display:flex;align-items:center;gap:8px;margin:4px 0 12px}
+.divider span{font-size:11px;color:var(--muted);white-space:nowrap}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.tlv-row{display:grid;grid-template-columns:42px 34px 1fr;gap:5px;padding:7px 0;border-bottom:1px solid var(--border);align-items:start;font-size:11px}
+.tlv-row:last-child{border-bottom:none}
+.tlv-id{font-family:var(--mono);color:var(--accent);font-weight:600}
+.tlv-len{font-family:var(--mono);color:var(--muted)}
+.tlv-val{font-family:var(--mono);color:var(--text);word-break:break-all}
+.tlv-desc{grid-column:1/-1;font-size:10px;color:var(--muted);margin-top:2px}
+.tlv-child{background:#0a1220;padding-left:12px}
+.tlv-cimpra{grid-column:1/-1;font-size:10px;color:var(--warn);margin-top:2px;font-family:var(--mono)}
+.crc-badge{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--accent);letter-spacing:.1em;background:#00d4aa11;border:1px solid #00d4aa33;border-radius:8px;padding:9px 14px;text-align:center;margin-top:8px}
+.emv-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}
+.emv-table th{text-align:left;padding:7px 8px;background:#0d1625;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+.emv-table td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+.emv-table td:first-child{font-family:var(--mono);color:var(--accent);white-space:nowrap}
+.emv-table tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.pill.req{background:#00d4aa22;color:var(--accent);border:1px solid #00d4aa33}
+.pill.opt{background:#3b82f622;color:var(--accent2);border:1px solid #3b82f633}
+.pill.cond{background:#f59e0b22;color:var(--warn);border:1px solid #f59e0b33}
+.pill.cimpra{background:#a855f722;color:#c084fc;border:1px solid #a855f733}
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:10px;padding-bottom:16px;position:relative}
+.step::before{content:'';position:absolute;left:14px;top:30px;width:2px;height:calc(100% - 12px);background:linear-gradient(to bottom,var(--border),transparent)}
+.step:last-child::before{display:none}
+.step-num{width:30px;height:30px;border-radius:50%;background:var(--card);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0}
+.step-body{flex:1;padding-top:3px}
+.step-body h4{font-size:12px;font-weight:600;margin-bottom:3px}
+.step-body p{font-size:11px;color:var(--muted);line-height:1.6}
+.code-sample{background:#0d1625;border:1px solid var(--border);border-radius:6px;padding:9px;font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:7px;word-break:break-all;line-height:1.8}
+.tmpl-block{background:#0d1625;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;position:relative}
+.tmpl-block .tmpl-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+.tmpl-block .tmpl-title{font-size:11px;font-weight:700;color:var(--accent2);letter-spacing:.06em;text-transform:uppercase}
+.sub-field{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.sub-id{font-family:var(--mono);font-size:10px;color:var(--muted);padding-top:9px;width:28px;flex-shrink:0}
+.sub-field input,.sub-field select{flex:1}
+.sub-label{font-size:10px;color:var(--muted);margin-bottom:3px}
+.info-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;border-radius:4px;background:#a855f715;border:1px solid #a855f730;color:#c084fc;margin-left:4px}
+
+/* ── WIZARD ── */
+.wiz-wrap{max-width:100%;margin:0 auto}
+
+/* Progress */
+.wiz-progress{display:flex;align-items:center;margin-bottom:18px;overflow:hidden}
+.wiz-dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--border);
+  background:var(--bg);display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0;transition:.3s;z-index:1}
+.wiz-dot.done{background:var(--accent);border-color:var(--accent);color:#000}
+.wiz-dot.active{border-color:var(--accent);color:var(--accent);
+  box-shadow:0 0 0 3px #00d4aa22}
+.wiz-line{flex:1;height:2px;background:var(--border);transition:.3s;min-width:4px}
+.wiz-line.done{background:var(--accent)}
+
+/* Card de pregunta */
+.wiz-card{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:18px;margin-bottom:14px;animation:wizIn .2s ease}
+@keyframes wizIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.wiz-step-label{font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;
+  letter-spacing:.1em;margin-bottom:8px}
+.wiz-q{font-size:17px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:8px}
+.wiz-hint{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px;
+  padding:8px 10px;background:#0d1625;border-radius:8px;border-left:2px solid var(--accent2)}
+.wiz-hint code{font-family:var(--mono);color:var(--accent2);font-size:11px}
+
+/* Opciones */
+.wiz-opts{display:flex;flex-direction:column;gap:8px}
+.wiz-opt{background:#0d1625;border:2px solid var(--border);border-radius:10px;
+  padding:12px 14px;cursor:pointer;transition:.2s;text-align:left;
+  font-family:var(--sans);width:100%;display:flex;align-items:flex-start;gap:10px}
+.wiz-opt:hover{border-color:var(--accent);background:#00d4aa08}
+.wiz-opt.selected{border-color:var(--accent);background:#00d4aa0d}
+.wiz-opt-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);
+  flex-shrink:0;margin-top:2px;transition:.2s;display:flex;align-items:center;justify-content:center}
+.wiz-opt.selected .wiz-opt-radio{border-color:var(--accent);background:var(--accent)}
+.wiz-opt.selected .wiz-opt-radio::after{content:'';width:7px;height:7px;background:#000;border-radius:50%}
+.wiz-opt-body{flex:1}
+.wiz-opt-title{font-size:13px;font-weight:700;color:var(--text);display:block;margin-bottom:3px}
+.wiz-opt.selected .wiz-opt-title{color:var(--accent)}
+.wiz-opt-desc{font-size:11px;color:var(--muted);line-height:1.5;display:block}
+
+/* Input */
+.wiz-input{font-size:14px;padding:11px 14px;border-radius:10px}
+.wiz-select{font-size:13px;padding:10px 14px;border-radius:10px}
+
+/* Navegación */
+.wiz-nav{display:flex;align-items:center;gap:8px;margin-top:16px}
+.wiz-btn-next{flex:1;background:linear-gradient(135deg,var(--accent),#00a88a);
+  color:#000;border:none;padding:13px;border-radius:10px;font-size:14px;
+  font-weight:700;cursor:pointer;font-family:var(--sans);transition:.15s}
+.wiz-btn-next:active{transform:scale(.98)}
+.wiz-btn-back{background:transparent;border:1px solid var(--border);color:var(--muted);
+  padding:13px 16px;border-radius:10px;font-size:13px;cursor:pointer;
+  font-family:var(--sans);transition:.15s;white-space:nowrap}
+.wiz-btn-back:hover{border-color:var(--text);color:var(--text)}
+.wiz-btn-skip{background:transparent;border:none;color:var(--muted);
+  padding:13px 8px;font-size:12px;cursor:pointer;font-family:var(--sans);
+  text-decoration:underline;white-space:nowrap}
+
+/* Preview EMV */
+.wiz-preview{background:#0d1625;border:1px solid var(--border);border-radius:10px;
+  padding:12px;margin-bottom:14px}
+.wiz-preview-title{font-size:10px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px}
+.wiz-preview-title::before{content:'';width:6px;height:6px;
+  border-radius:50%;background:var(--accent);flex-shrink:0}
+.wiz-tokens{font-family:var(--mono);font-size:10px;word-break:break-all;
+  line-height:2;color:var(--muted)}
+.wt-id{color:var(--warn)}
+.wt-len{color:var(--muted)}
+.wt-val{color:var(--accent)}
+.wt-sep{color:var(--border);margin:0 2px}
+
+/* Final */
+.wiz-final{text-align:center}
+.wiz-final-qr{display:flex;justify-content:center;margin:16px 0}
+.wiz-summary{background:#0d1625;border:1px solid var(--border);border-radius:10px;
+  padding:12px;margin-bottom:12px;text-align:left}
+.wiz-sum-row{display:flex;justify-content:space-between;align-items:flex-start;
+  padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;gap:10px}
+.wiz-sum-row:last-child{border-bottom:none}
+.wiz-sum-lbl{color:var(--muted);flex-shrink:0;font-size:11px}
+.wiz-sum-val{color:var(--text);font-family:var(--mono);font-size:11px;
+  text-align:right;word-break:break-all}
+
+/* ── FAQ ACORDEÓN ── */
+.faq-section{margin-bottom:14px}
+.faq-section-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px;background:var(--card);border:1px solid var(--border);
+  border-radius:10px;cursor:pointer;transition:.2s;user-select:none}
+.faq-section-hdr:hover{border-color:var(--accent)}
+.faq-section-hdr.open{border-color:var(--accent);border-radius:10px 10px 0 0;border-bottom-color:var(--border)}
+.faq-section-title{font-size:12px;font-weight:700;color:var(--accent);
+  letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.faq-section-chev{color:var(--muted);font-size:16px;transition:transform .2s;flex-shrink:0}
+.faq-section-hdr.open .faq-section-chev{transform:rotate(180deg)}
+.faq-items{display:none;background:#0d1625;border:1px solid var(--accent);
+  border-top:none;border-radius:0 0 10px 10px;overflow:hidden}
+.faq-items.open{display:block}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-item:last-child{border-bottom:none}
+.faq-q{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  padding:11px 14px;cursor:pointer;transition:.15s}
+.faq-q:hover{background:#ffffff08}
+.faq-q-text{font-size:12px;font-weight:600;color:var(--text);line-height:1.4;flex:1}
+.faq-q-icon{color:var(--muted);font-size:14px;flex-shrink:0;transition:transform .2s;margin-top:1px}
+.faq-item.open .faq-q-icon{transform:rotate(45deg);color:var(--accent)}
+.faq-a{display:none;padding:0 14px 12px;font-size:12px;color:var(--muted);
+  line-height:1.7;border-top:1px solid var(--border)}
+.faq-a.open{display:block}
+.faq-a code{font-family:var(--mono);font-size:11px;background:var(--card);
+  padding:1px 5px;border-radius:3px;color:var(--accent2)}
+.faq-a strong{color:var(--text)}
+
+/* #qr-canvas y #wiz-qr-canvas: estilos aplicados inline por renderQRWithLogo */
+.qr-logo-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:#fff;border-radius:4px;padding:3px;pointer-events:none;line-height:0}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <span class="logo-badge">NEWPAY · PCT v1.0</span>
+    <span class="logo-badge2">CIMPRA 525/530/535/540</span>
+  </div>
+  <h1>QR Builder<br><span>Transferencias 3.0</span></h1>
+  <p class="subtitle">Constructor según EMV QRCPS + Boletines CIMPRA BCRA Argentina</p>
+</header>
+
+<div class="tabs-nav">
+  <button class="tab-btn active" onclick="showTab('wizard',this)">🧭 Guided</button>
+  <button class="tab-btn" onclick="showTab('build',this)">🔨 Constructor</button>
+  <button class="tab-btn" onclick="showTab('decode',this)">🔍 Decodificador</button>
+  <button class="tab-btn" onclick="showTab('faq',this)">❓ FAQ / IA</button>
+  <button class="tab-btn" onclick="showTab('api',this)">&#128268; API Resolve</button>
+</div>
+
+<div id="app"></div>
+
+<script>
+// ── SCANNER STATE ──
+let scanStream=null, scanRaf=null;
+
+// ── ROUTER ──
+function showTab(name,el){
+  stopScanner();
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  window.scrollTo(0,0);
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  ({build:renderBuild,decode:renderDecode,faq:renderFAQ,wizard:renderWizard,api:renderAPI})[name](app);
+}
+
+// ── UTILS ──
+function tlv(id,val){ val=String(val); return id+String(val.length).padStart(2,'0')+val }
+function crc16(str){
+  let c=0xFFFF;
+  for(let i=0;i<str.length;i++){c^=str.charCodeAt(i)<<8;for(let j=0;j<8;j++){c=(c&0x8000)?(c<<1)^0x1021:c<<1;c&=0xFFFF}}
+  return c.toString(16).toUpperCase().padStart(4,'0');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function gv(id){const el=document.getElementById(id);return el?el.value.trim():''}
+function renderQRWithLogo(canvasId, text){
+  var el = document.getElementById(canvasId);
+  if(!el || !text) return;
+  el.innerHTML = '';
+  el.style.cssText = 'position:relative;display:inline-block;background:#fff;padding:10px;border-radius:8px;box-shadow:0 0 0 1px #1e2d45,0 0 40px rgba(0,212,170,.1)';
+
+  // Nivel M para todos los QR de pagos (balance entre redundancia y capacidad)
+  // QRCode.js 1.0.0: nivel H falla con strings > ~130 chars en byte mode
+  // Un QR de Transferencias 3.0 típico tiene 150-300 chars
+  var level = QRCode.CorrectLevel.M;
+  try {
+    new QRCode(el, {text:text, width:220, height:220, colorDark:'#000', colorLight:'#fff', correctLevel:level});
+  } catch(e) {
+    // Si M falla, intentar con L
+    el.innerHTML = '';
+    try {
+      new QRCode(el, {text:text, width:220, height:220, colorDark:'#000', colorLight:'#fff', correctLevel:QRCode.CorrectLevel.L});
+    } catch(e2) {
+      el.innerHTML = '<p style="color:var(--err);font-size:11px;padding:10px">El QR es demasiado largo para generar imagen. Usá el string EMV directamente.</p>';
+      return;
+    }
+  }
+
+  function addLogo(){
+    var d = document.createElement('div');
+    d.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:5px;padding:4px;line-height:0;pointer-events:none;z-index:10';
+    d.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="290 95 120 130" width="52" height="52"><path fill="#1E59D1" d="M394.92,153.58c-4.34,0-8.07,2.61-9.71,6.34h-12.88c-1.13-5.93-4.57-11.03-9.34-14.35l11.3-11.3c1.67-1.67,1.67-4.39,0-6.06c-1.67-1.67-4.39-1.67-6.06,0l-13.74,13.74c-0.13-0.03-0.26-0.05-0.4-0.07v-27.72c0-2.37-1.92-4.28-4.28-4.28s-4.28,1.92-4.28,4.28v27.8c-0.25,0.05-0.5,0.11-0.75,0.17l-13.93-13.93c-1.67-1.67-4.38-1.67-6.06,0c-1.67,1.67-1.67,4.39,0,6.06l11.73,11.73c-4.46,3.32-7.66,8.25-8.75,13.93h-13.99c-1.62-3.46-5.11-5.85-9.18-5.85c-5.6,0-10.14,4.54-10.14,10.14c0,5.6,4.54,10.14,10.14,10.14c4.07,0,7.56-2.4,9.18-5.85h13.99c1.13,5.91,4.55,11.01,9.31,14.33l-12.29,12.29c-1.67,1.67-1.67,4.38,0,6.06c0.84,0.84,1.93,1.25,3.03,1.25c1.1,0,2.19-0.42,3.03-1.25l14.14-14.14v28.44c0,2.37,1.92,4.28,4.28,4.28c2.37,0,4.28-1.92,4.28-4.28v-28.84c0.06-0.01,0.12-0.02,0.17-0.03c0.1,0.12,0.18,0.24,0.29,0.36l14.22,14.22c0.84,0.84,1.93,1.25,3.03,1.25c1.1,0,2.19-0.42,3.03-1.25c1.67-1.67,1.67-4.38,0-6.06l-11.88-11.88c5.07-3.3,8.74-8.58,9.92-14.74h12.88c1.65,3.73,5.37,6.34,9.71,6.34c5.87,0,10.62-4.76,10.62-10.62S400.79,153.58,394.92,153.58zM349.8,177.05c-7.1,0-12.85-5.75-12.85-12.85c0-7.1,5.75-12.85,12.85-12.85s12.85,5.75,12.85,12.85C362.66,171.3,356.9,177.05,349.8,177.05z"/></svg>';
+    el.appendChild(d);
+  }
+
+  // Detectar si QRCode generó canvas o img
+  var canvas = el.querySelector('canvas');
+  var img = el.querySelector('img');
+  if(canvas){
+    // Canvas: ya está dibujado, agregar logo
+    setTimeout(addLogo, 100);
+  } else if(img){
+    // Img: esperar a que cargue
+    if(img.complete && img.naturalWidth > 0){
+      setTimeout(addLogo, 50);
+    } else {
+      img.onload = function(){ setTimeout(addLogo, 50); };
+      // Fallback por si onload no dispara
+      setTimeout(addLogo, 500);
+    }
+  } else {
+    // Fallback: esperar más
+    setTimeout(addLogo, 300);
+  }
+}
+
+
+
+
+// Helper: obtener canvas compuesto (QR + logo) desde el contenedor
+function getQRCanvas(containerId, callback){
+  var container = document.getElementById(containerId);
+  if(!container){ callback(null); return; }
+  var canvas = container.querySelector('canvas');
+  var img = container.querySelector('img');
+  var size = 220;
+
+  function compose(source){
+    var out = document.createElement('canvas');
+    out.width = size; out.height = size;
+    var ctx = out.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,size,size);
+    ctx.drawImage(source, 0, 0, size, size);
+    // Logo
+    var ls = Math.round(size * 0.22);
+    var lx = Math.round((size - ls) / 2);
+    var ly = Math.round((size - ls) / 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(lx-5,ly-5,ls+10,ls+10,6); else ctx.rect(lx-5,ly-5,ls+10,ls+10);
+    ctx.fill();
+    var svgStr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="290 95 120 130" width="'+ls+'" height="'+ls+'"><path fill="#1E59D1" d="LOGOPATH"/></svg>'.replace('LOGOPATH','M394.92,153.58c-4.34,0-8.07,2.61-9.71,6.34h-12.88c-1.13-5.93-4.57-11.03-9.34-14.35l11.3-11.3c1.67-1.67,1.67-4.39,0-6.06c-1.67-1.67-4.39-1.67-6.06,0l-13.74,13.74c-0.13-0.03-0.26-0.05-0.4-0.07v-27.72c0-2.37-1.92-4.28-4.28-4.28s-4.28,1.92-4.28,4.28v27.8c-0.25,0.05-0.5,0.11-0.75,0.17l-13.93-13.93c-1.67-1.67-4.38-1.67-6.06,0c-1.67,1.67-1.67,4.39,0,6.06l11.73,11.73c-4.46,3.32-7.66,8.25-8.75,13.93h-13.99c-1.62-3.46-5.11-5.85-9.18-5.85c-5.6,0-10.14,4.54-10.14,10.14c0,5.6,4.54,10.14,10.14,10.14c4.07,0,7.56-2.4,9.18-5.85h13.99c1.13,5.91,4.55,11.01,9.31,14.33l-12.29,12.29c-1.67,1.67-1.67,4.38,0,6.06c0.84,0.84,1.93,1.25,3.03,1.25c1.1,0,2.19-0.42,3.03-1.25l14.14-14.14v28.44c0,2.37,1.92,4.28,4.28,4.28c2.37,0,4.28-1.92,4.28-4.28v-28.84c0.06-0.01,0.12-0.02,0.17-0.03c0.1,0.12,0.18,0.24,0.29,0.36l14.22,14.22c0.84,0.84,1.93,1.25,3.03,1.25c1.1,0,2.19-0.42,3.03-1.25c1.67-1.67,1.67-4.38,0-6.06l-11.88-11.88c5.07-3.3,8.74-8.58,9.92-14.74h12.88c1.65,3.73,5.37,6.34,9.71,6.34c5.87,0,10.62-4.76,10.62-10.62S400.79,153.58,394.92,153.58zM349.8,177.05c-7.1,0-12.85-5.75-12.85-12.85c0-7.1,5.75-12.85,12.85-12.85s12.85,5.75,12.85,12.85C362.66,171.3,356.9,177.05,349.8,177.05z');
+    var simg = new Image();
+    var blob = new Blob([svgStr],{type:'image/svg+xml'});
+    var burl = URL.createObjectURL(blob);
+    simg.onload = function(){ ctx.drawImage(simg,lx,ly,ls,ls); URL.revokeObjectURL(burl); callback(out); };
+    simg.onerror = function(){ URL.revokeObjectURL(burl); callback(out); }; // logo sin svg
+    simg.src = burl;
+  }
+
+  if(canvas && canvas.width > 0){
+    compose(canvas);
+  } else if(img && img.complete && img.naturalWidth > 0){
+    compose(img);
+  } else if(img){
+    img.onload = function(){ compose(img); };
+    setTimeout(function(){ if(img.naturalWidth > 0) compose(img); else callback(null); }, 1000);
+  } else {
+    callback(null);
+  }
+}
+
+function isMobile(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function copyQRImage(canvasId, btn){
+  btn.textContent = 'Generando...';
+  getQRCanvas(canvasId, function(out){
+    if(!out){ btn.textContent='Sin QR'; setTimeout(function(){btn.textContent='\u{1f4f7} Copiar QR';},2000); return; }
+
+    // Mobile: usar Web Share API para compartir la imagen
+    if(isMobile() && navigator.share && navigator.canShare){
+      out.toBlob(function(blob){
+        var file = new File([blob], 'qr-transferencias30.png', {type:'image/png'});
+        if(navigator.canShare({files:[file]})){
+          navigator.share({files:[file], title:'QR Transferencias 3.0'})
+            .then(function(){ btn.textContent='\u2705 Compartido!'; setTimeout(function(){btn.textContent='\u{1f4f7} Compartir QR';},2000); })
+            .catch(function(err){ if(err.name!=='AbortError') btn.textContent='Error al compartir'; setTimeout(function(){btn.textContent='\u{1f4f7} Compartir QR';},2500); });
+        } else {
+          btn.textContent='No soportado'; setTimeout(function(){btn.textContent='\u{1f4f7} Compartir QR';},2500);
+        }
+      },'image/png');
+      return;
+    }
+
+    // Desktop: copiar al portapapeles
+    out.toBlob(function(blob){
+      if(navigator.clipboard && window.ClipboardItem){
+        navigator.clipboard.write([new ClipboardItem({'image/png':blob})])
+          .then(function(){ btn.textContent='\u2705 Copiado!'; setTimeout(function(){btn.textContent='\u{1f4f7} Copiar QR';},2000); })
+          .catch(function(){ btn.textContent='Solo HTTPS'; setTimeout(function(){btn.textContent='\u{1f4f7} Copiar QR';},2500); });
+      } else {
+        btn.textContent='Usar descarga'; setTimeout(function(){btn.textContent='\u{1f4f7} Copiar QR';},2500);
+      }
+    },'image/png');
+  });
+}
+
+
+function downloadQRJPG(canvasId, filename){
+  getQRCanvas(canvasId, function(out){
+    if(!out) return;
+    var lnk = document.createElement('a');
+    lnk.download = (filename||'qr') + '.jpg';
+    lnk.href = out.toDataURL('image/jpeg', 0.95);
+    lnk.click();
+  });
+}
+
+
+function copyText(text,btn){
+  const ok=()=>{btn.textContent='✅ Copiado!';setTimeout(()=>{btn.textContent='📋 Copiar string EMV'},2000)};
+  const fail=()=>{btn.textContent='⚠️ Copiá manualmente';setTimeout(()=>{btn.textContent='📋 Copiar string EMV'},3000)};
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;top:0;left:0;opacity:0.01;z-index:9999';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy')?ok():fail()}catch{fail()}document.body.removeChild(ta)};
+  (navigator.clipboard&&window.isSecureContext)?navigator.clipboard.writeText(text).then(ok).catch(fb):fb();
+}
+
+const MCC_LIST=[
+  {v:'0000',l:'0000 – Sin categoría'},{v:'763',l:'0763 – Cooperativas agrícolas'},
+  {v:'1520',l:'1520 – Contratistas de construcción'},{v:'4111',l:'4111 – Transporte local'},
+  {v:'4814',l:'4814 – Telecomunicaciones'},{v:'4900',l:'4900 – Electricidad/Gas/Agua'},
+  {v:'5039',l:'5039 – Materiales de construcción'},{v:'5094',l:'5094 – Joyería/Metales'},
+  {v:'5411',l:'5411 – Supermercados'},{v:'5499',l:'5499 – Alimentos varios'},
+  {v:'5541',l:'5541 – Est. de servicio'},{v:'5812',l:'5812 – Restaurantes'},
+  {v:'5912',l:'5912 – Farmacias'},{v:'5983',l:'5983 – Combustibles'},
+  {v:'5999',l:'5999 – Comercio minorista'},{v:'7011',l:'7011 – Hoteles'},
+  {v:'7299',l:'7299 – Servicios personales'},{v:'8099',l:'8099 – Salud'},
+  {v:'8299',l:'8299 – Educación'},{v:'9399',l:'9399 – Servicios gubernamentales'},
+  {v:'9700',l:'9700 – Seguridad/Defensa'}, // usado como ejemplo en CIMPRA
+];
+
+// Brands CIMPRA 535 (posición = índice+1)
+const BRANDS=['Visa crédito','Visa débito','Mastercard','Mastercard debit','Maestro','Cabal','Amex','Naranja X'];
+
+// ══════════════════════════════════
+// TAB: CONSTRUCTOR
+// ══════════════════════════════════
+// Estado reactivo del constructor
+let buildState = {};
+
+function initBuildState(){
+  buildState = {
+    initMethod:'11',
+    mcc:'5999', currency:'032', amount:'', country:'AR', name:'', city:'',
+    postalCode:'', tipInd:'', feeFix:'', feePct:'',
+    // Templates merchant account (26-49)
+    merchantTemplates:[{
+      templateId:'26',
+      guid:'ar.com.aceptador',       // dominio invertido — CIMPRA 525
+      cuit:'',                         // subcampo libre 01 (CVU/CBU si lo usa)
+      adminCuit:'',                    // subcampo 98 — CIMPRA 530
+      usaApiResolve:'1',               // subcampo 99 — CIMPRA 530 (1=sí por default)
+      brands:'00000000',               // subcampo 01 para tarjeta — CIMPRA 535
+      paymentMethods:'',                 // subcampo 96 — CIMPRA 540
+      maxBins:'',                        // subcampo 97 — CIMPRA 540
+      extraSubs:[]                     // subcampos extra libres
+    }],
+    // Template 62
+    t62:{
+      pointOfSale:'',  // 62.03 — CIMPRA 530
+      loyaltyNum:'',   // 62.04
+      qrId:'',         // 62.05 = ID del QR — CIMPRA 530
+      customerId:'',   // 62.06
+      devicePos:'',    // 62.07 — CIMPRA 530
+      txPurpose:'00',  // 62.08 — CIMPRA 530 (00=compra)
+      billNum:'',      // 62.01
+      mobile:'',       // 62.02
+      termLabel:'',    // 62.07 alt
+    },
+    // Template 64 (idioma alternativo)
+    t64Active:false, t64Lang:'ES', t64Name:'', t64City:'',
+    // Unreserved 80-99
+    unreserved:[],
+  };
+}
+
+function renderBuild(app){
+  initBuildState();
+  rebuildBuildHTML(app);
+}
+
+function rebuildBuildHTML(app){
+  const s = buildState;
+  const isDyn = s.initMethod==='12';
+
+  app.innerHTML = `
+  <div class="alert info"><span>ℹ️</span><span>Constructor según <strong>EMV QRCPS v1.0</strong> + CIMPRA <strong>525, 530 y 535</strong>. El CRC16 se calcula automáticamente.</span></div>
+
+  <!-- ── 00/01 ENCABEZADO ── -->
+  <div class="card">
+    <div class="card-title"><span class="etag">ID 00–01</span> Encabezado</div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">00</span> Payload Format Indicator</label>
+        <input value="01" readonly style="color:var(--muted)">
+      </div>
+      <div class="field">
+        <label><span class="tag">01</span> Point of Initiation</label>
+        <select id="f01" onchange="buildState.initMethod=this.value;rebuildBuildHTML(document.getElementById('app'))">
+          <option value="11" ${s.initMethod==='11'?'selected':''}>11 – Estático</option>
+          <option value="12" ${s.initMethod==='12'?'selected':''}>12 – Dinámico</option>
+        </select>
+      </div>
+    </div>
+    ${isDyn?`<div class="alert ok" style="margin-bottom:0"><span>ℹ️</span><span><strong>QR Dinámico</strong>: según CIMPRA 530 son obligatorios ID del aceptador (subcampo 00 dominio invertido), CUIT admin (subcampo 98), uso API resolve (subcampo 99), código postal (campo 61) y monto (campo 54).</span></div>`:''}
+  </div>
+
+  <!-- ── 26-49 MERCHANT ACCOUNT TEMPLATES ── -->
+  <div class="card">
+    <div class="card-title"><span class="etag">ID 26–49</span> Merchant Account Information <span class="info-pill">📋 CIMPRA 525/530/535/540</span></div>
+    <div class="alert warn"><span>⚠️</span><span>
+      El <strong>dominio invertido</strong> en subcampo 00 identifica al aceptador (ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.coelsa</code>). 
+      La billetera lo usa como clave en la tabla de resolución de URL para encontrar la API del aceptador.<br>
+      En QR dinámico: subcampo <strong>98</strong> = CUIT del administrador, subcampo <strong>99</strong> = usa API resolve.
+    </span></div>
+    <div id="merchant-tmpl-list">${s.merchantTemplates.map((t,i)=>merchantTmplHTML(t,i,isDyn)).join('')}</div>
+    <button class="add-btn" onclick="addMerchantTmpl()">+ Agregar template (ID 26–49)</button>
+  </div>
+
+  <!-- ── 50-51 CVU/CBU según CIMPRA 525 ── -->
+  <div class="card">
+    <div class="card-title"><span class="etag">ID 50–51</span> CVU/CBU del aceptador <span class="info-pill">📋 CIMPRA 525</span></div>
+    <div class="alert info"><span>ℹ️</span><span>
+      Según el ejemplo del CIMPRA 525, el CVU/CBU del aceptador puede ir en templates adicionales (ej: ID 50 con el CUIT, ID 51 con el CVU de 22 dígitos). Esto permite que el QR sea autosuficiente para QR dinámico sin API resolve.
+    </span></div>
+    <div class="field">
+      <label><span class="tag">50.00</span> CUIT del aceptador (en template 50) <span class="hint">(opcional)</span></label>
+      <input id="f50cuit" maxlength="11" placeholder="30123456789" value="${esc(s.t50cuit||'')}">
+    </div>
+    <div class="field">
+      <label><span class="tag">51.00</span> CVU / CBU del aceptador (en template 51) <span class="hint">(opcional)</span></label>
+      <input id="f51cvu" maxlength="22" placeholder="0000074900000000000000" value="${esc(s.t51cvu||'')}">
+      <p style="font-size:10px;color:var(--muted);margin-top:3px">22 dígitos. Permite transferencia sin consultar API.</p>
+    </div>
+  </div>
+
+  <!-- ── 52-61 DATOS DEL COMERCIO ── -->
+  <div class="card">
+    <div class="card-title"><span class="etag">ID 52–61</span> Datos del Comercio</div>
+    <div class="field">
+      <label><span class="tag">52</span> MCC <span class="pill req">REQ</span> <span class="hint">— tabla VISA/AFIP según CIMPRA 530</span></label>
+      <select id="f52" value="${s.mcc}">${MCC_LIST.map(m=>`<option value="${m.v}" ${s.mcc===m.v?'selected':''}>${m.l}</option>`).join('')}</select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">53</span> Moneda <span class="pill req">REQ</span></label>
+        <select id="f53">
+          <option value="032" ${s.currency==='032'?'selected':''}>032 – ARS</option>
+          <option value="840" ${s.currency==='840'?'selected':''}>840 – USD</option>
+        </select>
+      </div>
+      <div class="field">
+        <label><span class="tag">54</span> Monto <span class="pill ${isDyn?'req':'cond'}">${isDyn?'REQ':'COND'}</span></label>
+        <input id="f54" type="text" inputmode="decimal" placeholder="1500.00" value="${esc(s.amount)}">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">58</span> País <span class="pill req">REQ</span></label>
+        <select id="f58"><option value="AR">AR – Argentina</option></select>
+      </div>
+      <div class="field">
+        <label><span class="tag">59</span> Merchant Name <span class="pill req">REQ</span></label>
+        <input id="f59" maxlength="25" placeholder="NOMBRE COMERCIO" value="${esc(s.name)}">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">60</span> Merchant City <span class="pill req">REQ</span></label>
+        <input id="f60" maxlength="15" placeholder="BUENOS AIRES" value="${esc(s.city)}">
+      </div>
+      <div class="field">
+        <label><span class="tag">61</span> Código Postal <span class="pill ${isDyn?'req':'opt'}">${isDyn?'REQ':'OPC'}</span> <span class="hint">8 chars alfanum.</span></label>
+        <input id="f61" maxlength="8" placeholder="B1870BWA" value="${esc(s.postalCode)}">
+        ${isDyn?'<p style="font-size:10px;color:var(--warn);margin-top:3px">Obligatorio en QR dinámico (CIMPRA 530). Formato alfanumérico 8 posiciones.</p>':''}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 55-57 TIP/CONVENIENCE ── -->
+  <div class="card">
+    <div class="card-title"><span class="etag">ID 55–57</span> Propina / Cargo adicional <span class="pill opt">OPC</span></div>
+    <div class="toggle-row">
+      <span style="font-size:12px;color:var(--muted)">No aplica en pagos con transferencia (dinero en cuenta). Solo relevante para tarjeta u otros medios.</span>
+      <label class="toggle"><input type="checkbox" id="tip-toggle" onchange="document.getElementById('tip-fields').style.display=this.checked?'block':'none'"><span class="slider"></span></label>
+    </div>
+    <div id="tip-fields" style="display:none">
+      <div class="field">
+        <label><span class="tag">55</span> Tip or Convenience Indicator</label>
+        <select id="f55" onchange="updateTipFields(this.value)">
+          <option value="">— No incluir —</option>
+          <option value="01">01 – Consumidor ingresa propina</option>
+          <option value="02">02 – Fee fijo (requiere ID 56)</option>
+          <option value="03">03 – Fee porcentaje (requiere ID 57)</option>
+        </select>
+      </div>
+      <div id="tip-fee-fixed" style="display:none" class="field">
+        <label><span class="tag">56</span> Fee Fijo</label>
+        <input id="f56" type="text" inputmode="decimal" placeholder="9.85">
+      </div>
+      <div id="tip-fee-pct" style="display:none" class="field">
+        <label><span class="tag">57</span> Fee Porcentaje <span class="hint">(sin %, ej: 3.00)</span></label>
+        <input id="f57" type="text" inputmode="decimal" placeholder="3.00">
+      </div>
+    </div>
+  </div>
+<div class="card">
+    <div class="card-title"><span class="etag">ID 62</span> Additional Data Field Template <span class="info-pill">📋 CIMPRA 530</span></div>
+    <div class="alert info" style="margin-bottom:10px"><span>ℹ️</span><span>
+      CIMPRA 530 define campos específicos: <strong>62.03</strong>=Point of Sale, <strong>62.05</strong>=ID del QR, <strong>62.07</strong>=Device POS, <strong>62.08</strong>=Tipo de compra (00=compra).
+    </span></div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">62.01</span> Bill Number / Nro. Factura <span class="pill opt">OPC</span></label>
+        <input id="f6201" maxlength="25" placeholder="FAC-0001">
+      </div>
+      <div class="field">
+        <label><span class="tag">62.02</span> Mobile Number <span class="pill opt">OPC</span></label>
+        <input id="f6202" maxlength="25" placeholder="+541112345678">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">62.03</span> Point of Sale <span class="pill opt">OPC</span> <span class="info-pill">530</span></label>
+        <input id="f6203" maxlength="25" placeholder="SUCURSAL-001">
+      </div>
+      <div class="field">
+        <label><span class="tag">62.04</span> Loyalty Number <span class="pill opt">OPC</span></label>
+        <input id="f6204" maxlength="25" placeholder="LYL-123456">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">62.05</span> ID del QR / order.id <span class="pill cond">COND</span> <span class="info-pill">530</span> <span class="hint">Obligatorio si no usa API resolve. UUID recomendado.</span></label>
+        <input id="f6205" maxlength="36" placeholder="a193244a-c224-4fc0-9ce3-b9defb43efb7">
+      </div>
+      <div class="field">
+        <label><span class="tag">62.06</span> Customer Label <span class="pill opt">OPC</span></label>
+        <input id="f6206" maxlength="25" placeholder="CLI-0042">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">62.07</span> Device / Terminal POS <span class="pill opt">OPC</span> <span class="info-pill">530</span></label>
+        <input id="f6207" maxlength="25" placeholder="26044821">
+      </div>
+      <div class="field">
+        <label><span class="tag">62.08</span> Tipo de compra <span class="pill opt">OPC</span> <span class="info-pill">530</span></label>
+        <select id="f6208">
+          <option value="">— No incluir —</option>
+          <option value="00">00 – Compra</option>
+          <option value="01">01 – Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label><span class="tag">62.10</span> ID operación / CUIT comercio <span class="pill opt">OPC</span> <span class="info-pill">530</span></label>
+      <input id="f6210" maxlength="25" placeholder="20112223338">
+    </div>
+    <div class="field">
+      <label><span class="tag">62.11</span> Sucursal <span class="pill opt">OPC</span> <span class="info-pill">530</span></label>
+      <input id="f6211" maxlength="25" placeholder="522">
+    </div>
+  </div>
+
+  <!-- ── TEMPLATE 64 ── -->
+  <div class="card">
+    <div class="card-title"><span class="etag">ID 64</span> Language Template <span class="pill opt">OPC</span></div>
+    <div class="toggle-row">
+      <span style="font-size:12px;color:var(--muted)">Nombre del comercio en idioma alternativo. Poco común en el ecosistema argentino.</span>
+      <label class="toggle"><input type="checkbox" id="t64-toggle" onchange="document.getElementById('t64-fields').style.display=this.checked?'block':'none'"><span class="slider"></span></label>
+    </div>
+    <div id="t64-fields" style="display:none">
+      <div class="row2">
+        <div class="field"><label><span class="tag">64.00</span> Idioma <span class="hint">ISO 639, 2 chars</span></label><input id="f6400" maxlength="2" placeholder="ES"></div>
+        <div class="field"><label><span class="tag">64.01</span> Nombre (alt)</label><input id="f6401" maxlength="25" placeholder="Nombre en idioma local"></div>
+      </div>
+      <div class="field"><label><span class="tag">64.02</span> Ciudad (alt)</label><input id="f6402" maxlength="15" placeholder="Ciudad en idioma local"></div>
+    </div>
+  </div>
+<div class="card">
+    <div class="card-title"><span class="etag">ID 80–99</span> Unreserved Templates <span class="pill opt">OPC</span> <span class="info-pill">📋 CIMPRA 535</span></div>
+    <div class="alert info" style="margin-bottom:10px"><span>ℹ️</span><span>CIMPRA 535 usa los templates 80+ para datos de tarjeta/firma en QR sin API resolve. Ejemplo: ID 80 = datos del aceptador, ID 82 = firma criptográfica, ID 83 = token.</span></div>
+    <div id="unreserved-list">${buildState.unreserved.map((t,i)=>unreservedHTML(t,i)).join('')}</div>
+    <button class="add-btn" onclick="addUnreserved()">+ Agregar Unreserved Template (ID 80–99)</button>
+  </div>
+
+  <div id="build-err" style="display:none" class="err-box"></div>
+  <button class="build-btn" onclick="doBuild()">⚡ Generar QR</button>
+  <div id="build-result"></div>`;
+}
+
+function merchantTmplHTML(t,i,isDyn){
+  const ids = [...Array(24)].map((_,j)=>String(j+26).padStart(2,'0'));
+  return `<div class="tmpl-block" id="mt-${i}">
+    <div class="tmpl-header">
+      <span class="tmpl-title">Template
+        <select onchange="changeMTId(${i},this)" style="display:inline;width:55px;padding:2px 4px;font-size:11px;background:#161f32;border:1px solid var(--border);border-radius:4px;color:var(--accent2);font-family:var(--mono)">
+          ${ids.map(id=>`<option value="${id}" ${t.templateId===id?'selected':''}>${id}</option>`).join('')}
+        </select>
+      </span>
+      ${i>0?`<button class="rm-btn" onclick="buildState.merchantTemplates.splice(${i},1);rebuildBuildHTML(document.getElementById('app'))">✕</button>`:''}
+    </div>
+    <div class="field">
+      <label><span class="tag">${t.templateId}.00</span> Dominio invertido del aceptador <span class="pill req">REQ</span> <span class="info-pill">525</span></label>
+      <input value="${esc(t.guid)}" placeholder="ar.com.modo" oninput="buildState.merchantTemplates[${i}].guid=this.value">
+      <p style="font-size:10px;color:var(--muted);margin-top:3px">Siempre obligatorio. Ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.coelsa</code>, <code style="font-family:var(--mono)">com.prisma</code></p>
+    </div>
+    ${isDyn?`
+    <div class="row2">
+      <div class="field">
+        <label><span class="tag">${t.templateId}.98</span> CUIT Administrador <span class="pill ${isDyn?'req':'opt'}">${isDyn?'REQ':'OPC'}</span> <span class="info-pill">530</span></label>
+        <input value="${esc(t.adminCuit||'')}" maxlength="11" placeholder="30714100803" oninput="buildState.merchantTemplates[${i}].adminCuit=this.value" inputmode="numeric">
+        <p style="font-size:10px;color:var(--muted);margin-top:2px">CUIT 11 dígitos sin puntos ni guiones</p>
+      </div>
+      <div class="field">
+        <label><span class="tag">${t.templateId}.99</span> Usa API resolve <span class="pill ${isDyn?'req':'opt'}">${isDyn?'REQ':'OPC'}</span> <span class="info-pill">530</span></label>
+        <select oninput="buildState.merchantTemplates[${i}].usaApiResolve=this.value">
+          <option value="1" ${t.usaApiResolve!=='0'?'selected':''}>1 – Sí usa API resolve</option>
+          <option value="0" ${t.usaApiResolve==='0'?'selected':''}>0 – No usa API resolve</option>
+        </select>
+      </div>
+    </div>`:''}
+    <div style="margin-bottom:8px">
+      <button onclick="toggleCardFields(${i})" style="background:transparent;border:1px dashed #f59e0b55;color:var(--warn);border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer;font-family:var(--sans);width:100%;text-align:left">
+        💳 Agregar campos de tarjeta de crédito (CIMPRA 535/540) — opcional
+      </button>
+      <div id="card-fields-${i}" style="display:none;margin-top:8px;background:#0d1625;border:1px solid #f59e0b33;border-radius:8px;padding:10px">
+        <label style="margin-bottom:6px;display:block;font-size:12px;font-weight:500;color:var(--text)"><span class="tag">${t.templateId}.01</span> Brands habilitadas (8 posiciones) <span class="pill opt">OPC</span></label>
+        <div class="row2" style="gap:6px;margin-bottom:10px">
+          ${BRANDS.map((b,bi)=>`
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;padding:4px;background:#161f32;border-radius:6px;border:1px solid var(--border)">
+              <input type="checkbox" ${(t.brands||'00000000')[bi]==='1'?'checked':''} onchange="updateBrand(${i},${bi},this.checked)" style="width:auto;padding:0;border:none;background:transparent">
+              <span style="color:var(--muted)">${bi+1}. ${b}</span>
+            </label>`).join('')}
+        </div>
+        <div class="row2">
+          <div class="field" style="margin-bottom:0">
+            <label><span class="tag">${t.templateId}.96</span> Métodos habilitados <span class="info-pill">540</span></label>
+            <select oninput="buildState.merchantTemplates[${i}].paymentMethods=this.value">
+              <option value="">— No incluir —</option>
+              <option value="11" ${(t.paymentMethods||'')==='11'?'selected':''}>11 – PCT y Tarjeta</option>
+              <option value="10" ${(t.paymentMethods||'')==='10'?'selected':''}>10 – Solo PCT</option>
+              <option value="01" ${(t.paymentMethods||'')==='01'?'selected':''}>01 – Solo Tarjeta</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label><span class="tag">${t.templateId}.97</span> Max BINs <span class="info-pill">540</span></label>
+            <select oninput="buildState.merchantTemplates[${i}].maxBins=this.value">
+              <option value="">— No incluir —</option>
+              <option value="01" ${(t.maxBins||'')==='01'?'selected':''}>01 – 1 BIN</option>
+              <option value="02" ${(t.maxBins||'')==='02'?'selected':''}>02-99 – N BINs</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label style="font-size:11px;color:var(--muted)">Sub-campos adicionales libres (IDs 01–97)</label>
+      <div id="mt-extras-${i}">${(t.extraSubs||[]).map((sf,si)=>`
+        <div class="sub-field" id="mt-sf-${i}-${si}">
+          <input value="${esc(sf.id)}" placeholder="ID" style="width:40px;flex:none;font-family:var(--mono);font-size:11px" maxlength="2" oninput="changeMTSubId(${i},${si},this)">
+          <input value="${esc(sf.value)}" placeholder="valor" oninput="buildState.merchantTemplates[${i}].extraSubs[${si}].value=this.value">
+          <button class="rm-btn" onclick="buildState.merchantTemplates[${i}].extraSubs.splice(${si},1);rebuildBuildHTML(document.getElementById('app'))">✕</button>
+        </div>`).join('')}</div>
+      <button class="add-btn" onclick="addMTExtra(${i})" style="font-size:11px;padding:6px;margin-top:6px">+ Sub-campo</button>
+    </div>
+  </div>`;
+}
+
+function unreservedHTML(t,i){
+  return `<div class="tmpl-block" id="ur-${i}">
+    <div class="tmpl-header">
+      <span class="tmpl-title">Template
+        <select onchange="buildState.unreserved[${i}].templateId=this.value" style="display:inline;width:55px;padding:2px 4px;font-size:11px;background:#161f32;border:1px solid var(--border);border-radius:4px;color:var(--accent2);font-family:var(--mono)">
+          ${[...Array(20)].map((_,j)=>{const id=String(j+80).padStart(2,'0');return `<option value="${id}" ${t.templateId===id?'selected':''}>${id}</option>`}).join('')}
+        </select>
+      </span>
+      <button class="rm-btn" onclick="buildState.unreserved.splice(${i},1);rebuildBuildHTML(document.getElementById('app'))">✕</button>
+    </div>
+    <div class="field">
+      <label><span class="tag">${t.templateId}.00</span> GUID <span class="pill req">REQ</span></label>
+      <input value="${esc(t.guid||'')}" placeholder="com.aceptador" oninput="buildState.unreserved[${i}].guid=this.value">
+    </div>
+    <div id="ur-fields-${i}">${(t.fields||[]).map((f,fi)=>`
+      <div class="sub-field">
+        <input value="${esc(f.id||'')}" placeholder="ID" style="width:40px;flex:none;font-family:var(--mono)" maxlength="2" oninput="buildState.unreserved[${i}].fields[${fi}].id=this.value">
+        <input value="${esc(f.val||'')}" placeholder="valor" oninput="buildState.unreserved[${i}].fields[${fi}].val=this.value">
+        <button class="rm-btn" onclick="buildState.unreserved[${i}].fields.splice(${fi},1);rebuildBuildHTML(document.getElementById('app'))">✕</button>
+      </div>`).join('')}</div>
+    <button class="add-btn" onclick="buildState.unreserved[${i}].fields.push({id:'01',val:''});rebuildBuildHTML(document.getElementById('app'))" style="font-size:11px;padding:6px">+ Campo</button>
+  </div>`;
+}
+
+function toggleCardFields(i){
+  const el=document.getElementById('card-fields-'+i);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+function updateBrand(ti,bi,checked){
+  let b = (buildState.merchantTemplates[ti].brands||'00000000').split('');
+  b[bi] = checked?'1':'0';
+  buildState.merchantTemplates[ti].brands = b.join('');
+}
+
+function updateTipFields(v){
+  document.getElementById('tip-fee-fixed').style.display=v==='02'?'block':'none';
+  document.getElementById('tip-fee-pct').style.display=v==='03'?'block':'none';
+}
+
+function changeMTSubId(ti,si,inp){
+  var newId = inp.value;
+  var used = buildState.merchantTemplates[ti].extraSubs
+    .filter(function(_,idx){return idx!==si;})
+    .map(function(s){return s.id;});
+  // También bloquear IDs reservados del sistema (00,98,99 en dinámico)
+  var reserved = ['00','98','99'];
+  if(reserved.includes(newId)){
+    alert('El subcampo '+newId+' está reservado. Usá IDs del 01 al 97.');
+    inp.value = buildState.merchantTemplates[ti].extraSubs[si].id;
+    return;
+  }
+  if(used.includes(newId)){
+    alert('El subcampo '+newId+' ya está en uso en este template.');
+    inp.value = buildState.merchantTemplates[ti].extraSubs[si].id;
+    return;
+  }
+  buildState.merchantTemplates[ti].extraSubs[si].id = newId;
+}
+
+function changeMTId(i,sel){
+  const newId=sel.value;
+  const duplicate=buildState.merchantTemplates.some((t,idx)=>idx!==i&&t.templateId===newId);
+  if(duplicate){
+    alert('El ID '+newId+' ya está en uso. Elegí otro.');
+    // revertir el select al valor anterior
+    sel.value=buildState.merchantTemplates[i].templateId;
+    return;
+  }
+  buildState.merchantTemplates[i].templateId=newId;
+  rebuildBuildHTML(document.getElementById('app'));
+}
+
+function addMerchantTmpl(){
+  const used=buildState.merchantTemplates.map(t=>parseInt(t.templateId));
+  const next=[...Array(24)].map((_,i)=>i+26).find(n=>!used.includes(n));
+  if(next===undefined){alert('Ya usaste todos los IDs disponibles (26-49).');return}
+  buildState.merchantTemplates.push({templateId:next.toString().padStart(2,'0'),guid:'',adminCuit:'',usaApiResolve:'1',brands:'00000000',paymentMethods:'',maxBins:'',extraSubs:[]});
+  rebuildBuildHTML(document.getElementById('app'));
+}
+
+function addMTExtra(i){
+  if(!buildState.merchantTemplates[i].extraSubs) buildState.merchantTemplates[i].extraSubs=[];
+  // Buscar el próximo ID disponible no usado
+  var used = buildState.merchantTemplates[i].extraSubs.map(function(s){return s.id;});
+  var next = '01';
+  for(var n=1;n<=97;n++){
+    var candidate = String(n).padStart(2,'0');
+    if(!used.includes(candidate)){next=candidate;break;}
+  }
+  buildState.merchantTemplates[i].extraSubs.push({id:next,value:''});
+  rebuildBuildHTML(document.getElementById('app'));
+}
+
+function addUnreserved(){
+  const used=buildState.unreserved.map(t=>parseInt(t.templateId));
+  const next=([...Array(20)].map((_,i)=>i+80).find(n=>!used.includes(n))||80).toString().padStart(2,'0');
+  buildState.unreserved.push({templateId:next,guid:'',fields:[]});
+  rebuildBuildHTML(document.getElementById('app'));
+}
+
+function showBuildErr(msg){const b=document.getElementById('build-err');b.textContent='⚠️ '+msg;b.style.display='block'}
+
+function doBuild(){
+  document.getElementById('build-err').style.display='none';
+  document.getElementById('build-result').innerHTML='';
+
+  const name=gv('f59'), city=gv('f60');
+  if(!name){showBuildErr('Nombre del comercio obligatorio (campo 59)');return}
+  if(!city){showBuildErr('Ciudad obligatoria (campo 60)');return}
+  const isDyn=gv('f01')==='12';
+  const amount=gv('f54');
+  if(isDyn&&!amount){showBuildErr('QR Dinámico requiere monto (campo 54) — CIMPRA 530');return}
+  const postalCode=gv('f61');
+  if(isDyn&&!postalCode){showBuildErr('QR Dinámico requiere código postal (campo 61) — CIMPRA 530');return}
+  // Validar 62.05 si no usa API resolve
+  const qrId=gv('f6205');
+  const noApiResolve = validMTs.every(t=>t.usaApiResolve==='0');
+  if(noApiResolve&&!qrId){showBuildErr('Sin API resolve, el ID del QR (campo 62.05) es obligatorio. La billetera lo usa como order.id.');return}
+
+  const validMTs=buildState.merchantTemplates.filter(t=>t.guid&&t.guid.trim());
+  if(!validMTs.length){showBuildErr('Al menos un Merchant Account Template debe tener dominio invertido');return}
+
+  let s = tlv('00','01') + tlv('01',gv('f01'));
+
+  // Templates 26-49
+  for(const t of buildState.merchantTemplates){
+    const guid=(t.guid||'').trim(); if(!guid) continue;
+    let inner = tlv('00',guid);
+    // subcampo 01 = brands (si tiene alguna marca habilitada)
+    const brands=t.brands||'00000000';
+    if(brands!=='00000000') inner+=tlv('01',brands);
+    // subcampos extra libres
+    for(const sf of (t.extraSubs||[])){const id=(sf.id||'').trim(),val=(sf.value||'').trim();if(id&&val) inner+=tlv(id.padStart(2,'0'),val)}
+    // subcampos CIMPRA 540 — métodos de pago y BINs (tarjeta, opcional)
+    const pm=(t.paymentMethods||'').trim();
+    const mb=(t.maxBins||'').trim();
+    if(pm) inner+=tlv('96',pm);
+    if(mb) inner+=tlv('97',mb);
+    // subcampos CIMPRA 530 — solo en dinámico
+    if(isDyn){
+      const adminCuit=(t.adminCuit||'').trim();
+      if(adminCuit) inner+=tlv('98',adminCuit);
+      inner+=tlv('99',t.usaApiResolve==='0'?'00':'01');
+    }
+    s+=tlv(t.templateId,inner);
+  }
+
+  // Templates 50/51 (CVU/CBU del aceptador — CIMPRA 525)
+  const t50cuit=gv('f50cuit'), t51cvu=gv('f51cvu');
+  if(t50cuit) s+=tlv('50',tlv('00',t50cuit));
+  if(t51cvu) s+=tlv('51',tlv('00',t51cvu));
+
+  // Campos raíz 52-61
+  s+=tlv('52',gv('f52'));
+  s+=tlv('53',gv('f53'));
+  // Normalizar monto: si no tiene punto decimal, agregar '.00'
+  if(amount){
+    const amtNorm = amount.includes('.')?amount:amount+'.00';
+    s+=tlv('54',amtNorm);
+  }
+  const tipInd=gv('f55');
+  if(tipInd){s+=tlv('55',tipInd);if(tipInd==='02'){const f=gv('f56');if(f)s+=tlv('56',f)}if(tipInd==='03'){const p=gv('f57');if(p)s+=tlv('57',p)}}
+  s+=tlv('58',gv('f58'));
+  s+=tlv('59',name);
+  s+=tlv('60',city);
+  if(postalCode) s+=tlv('61',postalCode);
+
+  // Template 62
+  let inner62='';
+  const t62map=[['01',gv('f6201')],['02',gv('f6202')],['03',gv('f6203')],['04',gv('f6204')],['05',gv('f6205')],['06',gv('f6206')],['07',gv('f6207')],['08',gv('f6208')],['10',gv('f6210')],['11',gv('f6211')]];
+  for(const [id,val] of t62map){if(val) inner62+=tlv(id,val)}
+  if(inner62) s+=tlv('62',inner62);
+
+  // Template 64
+  const t64chk=document.getElementById('t64-toggle');
+  if(t64chk&&t64chk.checked){
+    const lang=gv('f6400'),mname=gv('f6401'),mcity=gv('f6402');
+    if(lang&&mname){let i64=tlv('00',lang)+tlv('01',mname);if(mcity)i64+=tlv('02',mcity);s+=tlv('64',i64)}
+  }
+
+  // Unreserved 80-99
+  for(const t of buildState.unreserved){
+    const guid=(t.guid||'').trim();if(!guid)continue;
+    let inner=tlv('00',guid);
+    for(const f of (t.fields||[])){const id=(f.id||'').trim(),val=(f.val||'').trim();if(id&&val)inner+=tlv(id.padStart(2,'0'),val)}
+    s+=tlv(t.templateId,inner);
+  }
+
+  // CRC
+  s+='6304'+crc16(s+'6304');
+
+  if(s.length>512) document.getElementById('build-err').innerHTML='⚠️ El payload supera 512 chars ('+s.length+'). Según EMV spec §4.1 es recomendable no excederlo.';
+
+  document.getElementById('build-result').innerHTML=`
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">✅ QR Generado — ${s.length} chars ${s.length>512?'<span style="color:var(--warn)">⚠️ >512</span>':''}</div>
+      <div class="qr-zone">
+        <div id="qr-canvas"></div>
+        <div class="string-box">${esc(s)}</div>
+        <button class="copy-btn" id="copy-btn">📋 Copiar string EMV</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="copy-btn" id="copy-img-btn" style="background:#1e2d45;color:var(--text);flex:1">&#128247; <span id="copy-img-label">Copiar QR</span></button>
+          <button class="copy-btn" id="dl-btn" style="background:#1e2d45;color:var(--text);flex:1">&#11015; Descargar JPG</button>
+        </div>
+      </div>
+    </div>`;
+  // setTimeout para asegurar que el DOM esté actualizado antes de renderizar el QR
+  setTimeout(function(){
+    renderQRWithLogo('qr-canvas', s);
+    var cb = document.getElementById('copy-btn');
+    var ci = document.getElementById('copy-img-btn');
+    var dl = document.getElementById('dl-btn');
+    if(cb) cb.onclick = function(){ copyText(s, this); };
+    if(ci){
+      // Cambiar label según dispositivo
+      var lbl = ci.querySelector('#copy-img-label');
+      if(lbl && isMobile()) lbl.textContent = 'Compartir QR';
+      ci.onclick = function(){ copyQRImage('qr-canvas', this); };
+    }
+    if(dl) dl.onclick = function(){ downloadQRJPG('qr-canvas', 'qr-transferencias30'); };
+  }, 50);
+  document.getElementById('build-result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ══════════════════════════════════
+// TAB: DECODIFICADOR
+// ══════════════════════════════════
+function renderDecode(app){
+  app.innerHTML=`
+  <div class="card">
+    <div class="card-title">🔍 Decodificar QR EMV Argentina</div>
+    <button class="scan-btn" id="scan-toggle-btn" onclick="toggleScanner()"><span>📷</span> Escanear con cámara</button>
+    <div id="scanner-wrapper">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <canvas id="scanner-canvas"></canvas>
+      <div class="scan-overlay"><div class="scan-frame"><div class="scan-line"></div></div></div>
+    </div>
+    <div class="scan-status" id="scan-status"></div>
+    <button class="stop-btn" id="stop-scan-btn" style="display:none" onclick="stopScanner()">⏹ Detener cámara</button>
+    <div class="divider"><span>o pegá el string manualmente</span></div>
+    <div class="field"><textarea id="decode-input" rows="4" placeholder="000201010211260...6304XXXX"></textarea></div>
+    <button class="build-btn" onclick="doDecodeManual()">Decodificar string</button>
+  </div>
+  <div id="decode-result"></div>
+
+  <div class="card" style="margin-top:0">
+    <div class="card-title"><span class="etag">ID 63</span> Calculadora CRC16-CCITT</div>
+    <div class="alert info"><span>&#8505;&#65039;</span><span>El CRC cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 digitos del valor final (EMV spec 4.7.3).</span></div>
+    <div class="field" style="margin-top:4px">
+      <label>String EMV hasta ...6304 inclusive</label>
+      <textarea id="crc-input" rows="4" placeholder="Pega el string hasta ...6304 (inclusive)"></textarea>
+    </div>
+    <button class="build-btn" onclick="doCalcCRC()">Calcular CRC16</button>
+    <div id="crc-result" style="display:none;margin-top:14px">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:5px">Resultado (4 hex chars, mayusculas):</p>
+      <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent);letter-spacing:.1em;background:#00d4aa11;border:1px solid #00d4aa33;border-radius:8px;padding:10px 16px;text-align:center;margin-bottom:10px" id="crc-value"></div>
+      <p style="font-size:11px;color:var(--muted);line-height:1.7">
+        Polinomio: <span style="color:var(--accent2);font-family:var(--mono)">0x1021</span> &middot;
+        Semilla: <span style="color:var(--accent2);font-family:var(--mono)">0xFFFF</span> &middot;
+        Sin inversion &middot; UTF-8
+      </p>
+    </div>
+  </div>\
+    </div>`;
+}
+
+function doDecodeManual(){
+  const raw=(document.getElementById('decode-input').value||'').trim();
+  if(raw) renderDecodeResult(raw);
+}
+
+// Descripciones completas incluyendo CIMPRA
+const FDESC={
+  '00':'Payload Format Indicator – siempre "01".',
+  '01':'Point of Initiation – "11"=estático, "12"=dinámico.',
+  '26':'Merchant Account Template (CIMPRA 525/530: dominio invertido en subcampo 00).',
+  '27':'Merchant Account Template ID 27.',
+  '28':'Merchant Account Template ID 28.',
+  '29':'Merchant Account Template ID 29.',
+  '41':'Merchant Account Template ID 41 (ejemplo CIMPRA 525).',
+  '43':'Merchant Account Template ID 43 (ejemplo CIMPRA 530/535).',
+  '50':'Template ID 50 – CUIT del aceptador (según CIMPRA 525).',
+  '51':'Template ID 51 – CVU/CBU del aceptador (según CIMPRA 525).',
+  '52':'Merchant Category Code – tabla VISA/AFIP (CIMPRA 530).',
+  '53':'Transaction Currency – ISO 4217. 032=ARS.',
+  '54':'Transaction Amount.',
+  '55':'Tip or Convenience Indicator.',
+  '56':'Convenience Fee Fixed.',
+  '57':'Convenience Fee Percentage.',
+  '58':'Country Code – "AR".',
+  '59':'Merchant Name (máx. 25 chars).',
+  '60':'Merchant City (máx. 15 chars).',
+  '61':'Postal Code – alfanumérico 8 chars (CIMPRA 530, obligatorio en QR dinámico).',
+  '62':'Additional Data Field Template (CIMPRA 530: 03=POS, 05=ID QR, 07=device, 08=tipo compra).',
+  '63':'CRC – CRC16-CCITT. Siempre el último campo.',
+  '64':'Merchant Info – Language Template.',
+  '80':'Unreserved Template 80 (CIMPRA 535: datos aceptador sin IEP).',
+  '82':'Unreserved Template 82 (CIMPRA 535: firma criptográfica).',
+  '83':'Unreserved Template 83 (CIMPRA 535: token).',
+};
+// Sub-campos con anotaciones CIMPRA
+const SDESC={
+  '00':'GUID / Dominio invertido del aceptador (CIMPRA 525)',
+  '01':'Sub-campo 01 – Brands de tarjeta 8 posiciones (CIMPRA 535): 1=Visa C, 2=Visa D, 3=MC, 4=MC D, 5=Maestro, 6=Cabal, 7=Amex, 8=Naranja',
+  '02':'Sub-campo 02 / Mobile Number (en 62)',
+  '03':'Store Label / Point of Sale (CIMPRA 530)',
+  '04':'Loyalty Number (en 62)',
+  '05':'Reference Label / ID del QR (CIMPRA 530)',
+  '06':'Customer Label (en 62)',
+  '07':'Terminal Label / Device POS (CIMPRA 530)',
+  '08':'Purpose of Transaction – 00=compra (CIMPRA 530)',
+  '09':'Additional Consumer Data Request',
+  '10':'ID operación / CUIT comercio (CIMPRA 530)',
+  '11':'Sucursal (CIMPRA 530)',
+  '96':'PAYMENT_METHODS_ALLOWED (CIMPRA 540): 1er dígito=PCT, 2do=Tarjeta. 11=ambos, 10=solo PCT, 01=solo tarjeta',
+  '97':'MAX_BINS_ALLOWED (CIMPRA 540): 01=1 bin (usuario elige), 02-99=N bines',
+  '98':'CUIT del Administrador del esquema – 11 dígitos (CIMPRA 530)',
+  '99':'Usa API resolve (CIMPRA 530) — 00=no usa IEP, 01=usa IEP (2 digitos en practica)',
+};
+
+const TEMPLATE_IDS=new Set([...[...Array(24)].map((_,i)=>String(i+26).padStart(2,'0')),'50','51','62','64',...[...Array(20)].map((_,i)=>String(i+80).padStart(2,'0'))]);
+
+function parseTLV(s,desc,depth=0){
+  const out=[];let i=0;
+  while(i<s.length-3){
+    const id=s.substr(i,2),len=parseInt(s.substr(i+2,2),10);
+    if(isNaN(len)||i+4+len>s.length) break;
+    const val=s.substr(i+4,len);
+    const item={id,len:String(len).padStart(2,'0'),val,desc:desc[id]||''};
+    if(depth===0&&TEMPLATE_IDS.has(id)) item.children=parseTLV(val,SDESC,1);
+    out.push(item);i+=4+len;
+  }
+  return out;
+}
+
+function renderDecodeResult(raw){
+  const out=document.getElementById('decode-result');
+  const rows=parseTLV(raw,FDESC);
+  if(!rows.length){out.innerHTML='<div class="card"><p style="color:var(--err)">No se pudo decodificar. Verificá que sea un string EMV válido.</p></div>';return}
+
+  // Detectar características CIMPRA
+  const hints=[];
+  const hasDyn=rows.find(r=>r.id==='01'&&r.val==='12');
+  if(hasDyn) hints.push('QR Dinámico (01=12)');
+  const mtTemplates=rows.filter(r=>TEMPLATE_IDS.has(r.id)&&parseInt(r.id)>=26&&parseInt(r.id)<=49);
+  if(mtTemplates.length){
+    for(const t of mtTemplates){
+      const sub98=t.children&&t.children.find(c=>c.id==='98');
+      const sub99=t.children&&t.children.find(c=>c.id==='99');
+      if(sub99) hints.push('Template '+t.id+': API resolve='+(sub99.val==='1'?'SI':'NO')+' (CIMPRA 530)');
+      if(sub98) hints.push('Template '+t.id+': Admin CUIT='+sub98.val+' (CIMPRA 530)');
+    }
+  }
+
+    const hintsHTML=hints.length?'<div class="alert ok"><span>&#128269;</span><span>'+hints.join(' &middot; ')+'</span></div>':'';
+  let html=hintsHTML+`
+  <div class="card"><div class="card-title">&#128203; Campos decodificados</div>
+    <div style="display:grid;grid-template-columns:42px 34px 1fr;gap:4px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:10px;color:var(--muted);font-weight:600">ID</span>
+      <span style="font-size:10px;color:var(--muted);font-weight:600">LEN</span>
+      <span style="font-size:10px;color:var(--muted);font-weight:600">VALOR</span>
+    </div>`;
+
+  for(const r of rows){
+    html+=`<div class="tlv-row"><span class="tlv-id">${r.id}</span><span class="tlv-len">${r.len}</span><span class="tlv-val">${esc(r.val)}</span>${r.desc?`<span class="tlv-desc">↳ ${esc(r.desc)}</span>`:''}</div>`;
+    if(r.children) for(const c of r.children){
+      // Interpretar brands si es subcampo 01 de template 26-49
+      let brandNote='';
+      if(c.id==='01'&&c.val.length===8){
+        const active=BRANDS.filter((_,bi)=>c.val[bi]==='1');
+        if(active.length) brandNote=`<span class="tlv-cimpra">Brands: ${active.join(', ')}</span>`;
+      }
+      html+=`<div class="tlv-row tlv-child"><span class="tlv-id" style="color:var(--accent2)">${c.id}</span><span class="tlv-len">${c.len}</span><span class="tlv-val">${esc(c.val)}</span>${c.desc?`<span class="tlv-desc">↳ ${esc(c.desc)}</span>`:''}${brandNote}</div>`;
+    }
+  }
+  html+='</div>';
+
+  if(raw.length>=4){
+    const body=raw.slice(0,-4),decl=raw.slice(-4).toUpperCase(),calc=crc16(body),ok=calc===decl;
+    html+=`<div class="card" style="margin-top:10px"><div class="card-title">🔐 Verificación CRC</div>
+      <p style="font-size:12px">Declarado: <strong style="font-family:var(--mono);color:var(--accent)">${decl}</strong> &nbsp;·&nbsp; Calculado: <strong style="font-family:var(--mono);color:var(--accent)">${calc}</strong></p>
+      <p style="margin-top:8px;font-size:13px;color:${ok?'var(--accent)':'var(--err)'}">${ok?'✅ CRC válido':'❌ CRC inválido'}</p>
+    </div>`;
+  }
+  out.innerHTML=html;
+  out.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── SCANNER ──
+async function toggleScanner(){const w=document.getElementById('scanner-wrapper');if(w&&w.style.display==='block'){stopScanner();return}await startScanner()}
+async function startScanner(){
+  const w=document.getElementById('scanner-wrapper'),v=document.getElementById('scanner-video');
+  const btn=document.getElementById('scan-toggle-btn'),sb=document.getElementById('stop-scan-btn'),st=document.getElementById('scan-status');
+  if(!w)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){st.textContent='❌ Browser sin soporte de cámara.';return}
+  st.textContent='Solicitando acceso…';
+  // En mobile preferir cámara trasera con alta resolución
+  const tries=[
+    {video:{facingMode:{exact:'environment'}, width:{ideal:1280}, height:{ideal:720}}},
+    {video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}}},
+    {video:{facingMode:'environment'}},
+    {video:true}
+  ];
+  let err=null;
+  for(const c of tries){try{scanStream=await navigator.mediaDevices.getUserMedia(c);break}catch(e){err=e;scanStream=null}}
+  if(!scanStream){const n=err?.name||'';st.innerHTML=(n==='NotAllowedError'||n==='PermissionDeniedError')?`<strong>Permiso denegado.</strong><br>Chrome: 🔒 → Cámara → Permitir → recargar. Safari: Ajustes → Safari → Cámara → Permitir.`:'❌ '+(err?.message||'No se pudo acceder.');return}
+  v.srcObject=scanStream;await v.play();
+  w.style.display='block';sb.style.display='block';btn.innerHTML='<span>📷</span> Cámara activa';st.textContent='Apuntá al QR…';scanLoop();
+}
+function scanLoop(){
+  const v=document.getElementById('scanner-video'),cv=document.getElementById('scanner-canvas');
+  if(!scanStream||!v||!cv){return;}
+
+  // Esperar datos de video válidos
+  if(v.readyState < v.HAVE_ENOUGH_DATA || v.videoWidth===0 || v.videoHeight===0){
+    scanRaf=requestAnimationFrame(scanLoop);return;
+  }
+
+  cv.width=v.videoWidth;
+  cv.height=v.videoHeight;
+  const ctx=cv.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(v,0,0,cv.width,cv.height);
+
+  var d=ctx.getImageData(0,0,cv.width,cv.height);
+
+  // Intentar con ambas inversiones — mejora detección en pantallas y papel
+  var code = jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'})
+          || jsQR(d.data,d.width,d.height,{inversionAttempts:'invertFirst'});
+
+  if(code&&code.data){
+    var st=document.getElementById('scan-status');
+    if(st)st.textContent='✅ QR detectado!';
+    stopScanner();
+    var inp=document.getElementById('decode-input');
+    if(inp)inp.value=code.data;
+    renderDecodeResult(code.data);
+  } else {
+    scanRaf=requestAnimationFrame(scanLoop);
+  }
+}
+function stopScanner(){
+  if(scanRaf){cancelAnimationFrame(scanRaf);scanRaf=null}
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
+  const w=document.getElementById('scanner-wrapper'),sb=document.getElementById('stop-scan-btn'),btn=document.getElementById('scan-toggle-btn');
+  if(w)w.style.display='none';if(sb)sb.style.display='none';if(btn)btn.innerHTML='<span>📷</span> Escanear con cámara';
+}
+
+// ══════════════════════════════════
+// TAB: CRC16
+// ══════════════════════════════════
+function renderCRC(app){
+  app.innerHTML=`
+  <div class="card">
+    <div class="card-title"><span class="etag">ID 63</span> CRC16-CCITT (XMODEM)</div>
+    <div class="alert info"><span>ℹ️</span><span>Cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 dígitos del valor final (EMV spec §4.7.3).</span></div>
+    <div class="field" style="margin-top:4px">
+      <label>String EMV hasta <code style="font-family:var(--mono);font-size:11px">...6304</code> inclusive</label>
+      <textarea id="crc-input" rows="5" placeholder="Pegá el string hasta ...6304 (inclusive)"></textarea>
+    </div>
+    <button class="build-btn" onclick="doCalcCRC()">Calcular CRC16</button>
+    <div id="crc-result" style="display:none;margin-top:12px">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:5px">Resultado (4 hex chars, mayúsculas):</p>
+      <div class="crc-badge" id="crc-value"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7">
+        Polinomio: <span style="color:var(--accent2);font-family:var(--mono)">0x1021</span> (ISO/IEC 13239)&nbsp;·&nbsp;
+        Semilla: <span style="color:var(--accent2);font-family:var(--mono)">0xFFFF</span>&nbsp;·&nbsp;
+        Sin inversión&nbsp;·&nbsp;Encoding: UTF-8
+      </p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📐 Algoritmo paso a paso</div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><h4>String completo sin el valor del CRC</h4><p>Todos los campos TLV en orden.</p><div class="code-sample">000201010211260...<strong>6304</strong></div></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><h4>CRC16-CCITT (XMODEM)</h4><p>Polinomio <code style="font-family:var(--mono)">0x1021</code>, semilla <code style="font-family:var(--mono)">0xFFFF</code>, sin reflexión.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><h4>4 chars HEX uppercase</h4><div class="code-sample">0x007B → "007B"</div></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Concatenar al final</h4><div class="code-sample">...6304<strong>1A3F</strong></div></div></div>
+    </div>
+  </div>`;
+}
+function doCalcCRC(){
+  const v=(document.getElementById('crc-input').value||'').trim();if(!v)return;
+  document.getElementById('crc-value').textContent=crc16(v);
+  document.getElementById('crc-result').style.display='block';
+}
+
+// ══════════════════════════════════
+// TAB: GUÍA
+// ══════════════════════════════════
+function renderGuide(app){
+  app.innerHTML=`
+  <div class="card">
+    <div class="card-title">Marco normativo – Transferencias 3.0 Argentina</div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:8px">
+      El QR para pagos con transferencia en Argentina se basa en <strong style="color:var(--text)">EMV QRCPS v1.0 (Merchant-Presented Mode)</strong> como estándar base, 
+      complementado por los <strong style="color:var(--text)">Boletines CIMPRA</strong> que definen las reglas operativas específicas del ecosistema argentino.
+    </p>
+    <table class="emv-table">
+      <thead><tr><th>Documento</th><th>Tema principal</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><a href="https://www.emvco.com/emv-technologies/qrcodes/" target="_blank" style="color:var(--accent2);text-decoration:none">EMV QRCPS v1.0 ↗</a></td>
+          <td>Estructura TLV, campos raíz 00-99, CRC16-CCITT, templates anidados</td>
+        </tr>
+        <tr>
+          <td><a href="https://www.bcra.gob.ar/pdfs/sistemasfinancierosydepagos/SNP3525.pdf" target="_blank" style="color:#c084fc;text-decoration:none">CIMPRA 525 ↗</a></td>
+          <td>Primera IEP: dominio invertido en subcampo 00, tabla de resolución URL, flujos de escenarios (open/closed/pending…), QR estático y dinámico</td>
+        </tr>
+        <tr>
+          <td><a href="https://www.bcra.gob.ar/archivos/Pdfs/SistemasFinancierosYdePagos/Boletin_CIMPRA_530.pdf" target="_blank" style="color:#c084fc;text-decoration:none">CIMPRA 530 ↗</a></td>
+          <td>ID aceptador (subcampo 00 dominio invertido), CUIT admin (subcampo 98), API resolve (subcampo 99), MCC tabla VISA/AFIP, código postal 8 chars alfanum, devoluciones parciales</td>
+        </tr>
+        <tr>
+          <td><a href="https://www.bcra.gob.ar/Pdfs/SistemasFinancierosYdePagos/Boletin_CIMPRA_535.pdf" target="_blank" style="color:#f59e0b;text-decoration:none">CIMPRA 535 ↗ 💳</a></td>
+          <td><em style="color:var(--warn)">Solo tarjeta de crédito.</em> Brands (subcampo 01), flujo sin IEP, templates 80+ para firma/token</td>
+        </tr>
+        <tr>
+          <td><a href="https://www.bcra.gob.ar/archivos/Pdfs/SistemasFinancierosYdePagos/Boletin-CIMPRA-540.pdf" target="_blank" style="color:#f59e0b;text-decoration:none">CIMPRA 540 ↗ 💳</a></td>
+          <td><em style="color:var(--warn)">Solo tarjeta de crédito.</em> Mejoras al 535: subcampo 96 (métodos habilitados PCT/tarjeta) y subcampo 97 (máx BINs aceptados)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Merchant Account Info – reglas CIMPRA</div>
+    <div class="alert warn" style="margin-bottom:10px"><span>⚠️</span><span>El GUID en subcampo 00 de los templates 26-49 <strong>debe ser un dominio invertido</strong> (no una URL). La billetera lo usa para buscar la URL del aceptador en la tabla de resolución.</span></div>
+    <table class="emv-table">
+      <thead><tr><th>Sub-campo</th><th>Contenido</th><th>Fuente</th></tr></thead>
+      <tbody>
+        <tr><td>00</td><td>Dominio invertido del aceptador. Ej: <code style="font-family:var(--mono)">ar.com.modo</code></td><td><span class="pill cimpra">CIMPRA 525</span></td></tr>
+        <tr><td>01</td><td>Brands habilitadas (8 posiciones): 1=VisaC, 2=VisaD, 3=MC, 4=MCD, 5=Maestro, 6=Cabal, 7=Amex, 8=Naranja</td><td><span class="pill cimpra">CIMPRA 535</span></td></tr>
+        <tr><td style="color:var(--warn)">96</td><td><em>Solo tarjeta:</em> Métodos habilitados — 1er dígito=PCT, 2do=Tarjeta. "11"=ambos, "10"=solo PCT, "01"=solo tarjeta</td><td><span class="pill cimpra">CIMPRA 540</span></td></tr>
+        <tr><td style="color:var(--warn)">97</td><td><em>Solo tarjeta:</em> MAX_BINS_ALLOWED — "01"=1 bin (usuario elige medio), "02"-"99"=N bines</td><td><span class="pill cimpra">CIMPRA 540</span></td></tr>
+        <tr><td>98</td><td>CUIT del administrador del esquema, 11 dígitos sin separadores</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+        <tr><td>99</td><td>Usa API resolve: "0"=no usa, "1"=usa (por defecto todos usan)</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+        <tr><td>01-97</td><td>Libres según esquema del aceptador</td><td>EMV / aceptador</td></tr>
+      </tbody>
+    </table>
+    <div class="code-sample" style="margin-top:10px">
+// Template ID 41 del ejemplo CIMPRA 525
+41 35
+  00 11 ar.com.modo    ← dominio invertido
+  98 11 30714100803    ← CUIT admin (CIMPRA 530)
+  99 02 01             ← usa API resolve (CIMPRA 530)
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Campos raíz — tabla completa con fuente</div>
+    <table class="emv-table">
+      <thead><tr><th>ID</th><th>Nombre</th><th></th><th>Fuente / Notas</th></tr></thead>
+      <tbody>
+        <tr><td>00</td><td>Payload Format Indicator</td><td><span class="pill req">REQ</span></td><td>Siempre "01" — EMV</td></tr>
+        <tr><td>01</td><td>Point of Initiation Method</td><td><span class="pill opt">OPC</span></td><td>11=estático, 12=dinámico — EMV</td></tr>
+        <tr><td>26-49</td><td>Merchant Account Templates</td><td><span class="pill req">REQ</span></td><td>Subcampo 00=dominio invertido, 98=CUIT admin, 99=API resolve — CIMPRA 525/530</td></tr>
+        <tr><td>50-51</td><td>Templates CUIT/CVU aceptador</td><td><span class="pill opt">OPC</span></td><td>CIMPRA 525 (QR autosuficiente sin API)</td></tr>
+        <tr><td>52</td><td>MCC</td><td><span class="pill req">REQ</span></td><td>Tabla VISA/AFIP — CIMPRA 530</td></tr>
+        <tr><td>53</td><td>Transaction Currency</td><td><span class="pill req">REQ</span></td><td>032=ARS — EMV</td></tr>
+        <tr><td>54</td><td>Transaction Amount</td><td><span class="pill cond">COND</span></td><td>Obligatorio si 01=12 — EMV</td></tr>
+        <tr><td>55-57</td><td>Tip / Convenience</td><td><span class="pill opt">OPC</span></td><td>EMV</td></tr>
+        <tr><td>58</td><td>Country Code</td><td><span class="pill req">REQ</span></td><td>"AR" — EMV</td></tr>
+        <tr><td>59</td><td>Merchant Name</td><td><span class="pill req">REQ</span></td><td>Máx. 25 chars — EMV</td></tr>
+        <tr><td>60</td><td>Merchant City</td><td><span class="pill req">REQ</span></td><td>Máx. 15 chars — EMV</td></tr>
+        <tr><td>61</td><td>Postal Code</td><td><span class="pill cond">COND</span></td><td>8 chars alfanum, obligatorio en QR dinámico — CIMPRA 530</td></tr>
+        <tr><td>62</td><td>Additional Data Template</td><td><span class="pill opt">OPC</span></td><td>03=POS, 05=ID QR, 07=device, 08=tipo compra — CIMPRA 530</td></tr>
+        <tr><td>63</td><td>CRC</td><td><span class="pill req">REQ</span></td><td>CRC16-CCITT, siempre último — EMV</td></tr>
+        <tr><td>64</td><td>Language Template</td><td><span class="pill opt">OPC</span></td><td>Nombre/ciudad en idioma alternativo — EMV</td></tr>
+        <tr><td>80-99</td><td>Unreserved Templates</td><td><span class="pill opt">OPC</span></td><td>80=datos aceptador, 82=firma, 83=token — CIMPRA 535</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Subcampos del Template 62 — CIMPRA 530</div>
+    <table class="emv-table">
+      <thead><tr><th>ID</th><th>Nombre</th><th>Fuente</th></tr></thead>
+      <tbody>
+        <tr><td>62.01</td><td>Bill Number / Nro. Factura</td><td>EMV</td></tr>
+        <tr><td>62.02</td><td>Mobile Number</td><td>EMV</td></tr>
+        <tr><td>62.03</td><td>Point of Sale (Store Label)</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+        <tr><td>62.04</td><td>Loyalty Number</td><td>EMV</td></tr>
+        <tr><td>62.05</td><td>ID del QR / Reference Label</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+        <tr><td>62.06</td><td>Customer Label</td><td>EMV</td></tr>
+        <tr><td>62.07</td><td>Device POS / Terminal Label</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+        <tr><td>62.08</td><td>Tipo de compra – 00=compra</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+        <tr><td>62.09</td><td>Additional Consumer Data Request</td><td>EMV</td></tr>
+        <tr><td>62.10</td><td>CUIT del comercio / ID operación</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+        <tr><td>62.11</td><td>Sucursal</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+        <tr><td>62.50-99</td><td>Templates de esquemas de pago</td><td>EMV</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Ejemplo completo CIMPRA 530</div>
+    <div class="code-sample" style="line-height:2">
+<span style="color:var(--warn)">00</span>02<span style="color:var(--accent)">01</span>
+<span style="color:var(--warn)">01</span>02<span style="color:var(--accent)">11</span>
+<span style="color:var(--warn)">41</span>35
+  <span style="color:var(--accent2)">00</span>11<span style="color:#a78bfa">ar.com.modo</span>        ← dominio invertido
+  <span style="color:var(--accent2)">98</span>11<span style="color:#a78bfa">30714100803</span>        ← CUIT admin
+  <span style="color:var(--accent2)">99</span>02<span style="color:#a78bfa">01</span>                ← usa API resolve
+<span style="color:var(--warn)">50</span>15<span style="color:var(--accent2)">00</span>11<span style="color:#a78bfa">20112223338</span>       ← CUIT aceptador
+<span style="color:var(--warn)">51</span>26<span style="color:var(--accent2)">00</span>22<span style="color:#a78bfa">0720035920000000519854</span> ← CVU
+<span style="color:var(--warn)">52</span>04<span style="color:var(--accent)">9700</span>              ← MCC tabla VISA
+<span style="color:var(--warn)">53</span>03<span style="color:var(--accent)">032</span>               ← ARS
+<span style="color:var(--warn)">58</span>02<span style="color:var(--accent)">AR</span>
+<span style="color:var(--warn)">59</span>13<span style="color:var(--accent)">MERCHANT-NAME</span>
+<span style="color:var(--warn)">60</span>13<span style="color:var(--accent)">MERCHANT-CITY</span>
+<span style="color:var(--warn)">61</span>08<span style="color:var(--accent)">B1870BWA</span>          ← código postal 8 chars
+<span style="color:var(--warn)">62</span>39
+  <span style="color:var(--accent2)">03</span>13<span style="color:#a78bfa">POINT_OF_SALE</span>     ← POS
+  <span style="color:var(--accent2)">10</span>11<span style="color:#a78bfa">20112223338</span>       ← CUIT comercio
+  <span style="color:var(--accent2)">11</span>03<span style="color:#a78bfa">522</span>              ← sucursal
+<span style="color:var(--warn)">63</span>04<span style="color:var(--err)">967F</span></div>
+    <p style="font-size:10px;color:var(--muted);margin-top:8px">
+      <span style="color:var(--warn)">■</span> IDs raíz &nbsp; <span style="color:var(--accent2)">■</span> Sub-IDs &nbsp; <span style="color:#a78bfa">■</span> Valores &nbsp; <span style="color:var(--err)">■</span> CRC
+    </p>
+  </div>`;
+}
+
+// ══════════════════════════════════
+// TAB: IA
+// ══════════════════════════════════
+function renderAI(app){
+  app.innerHTML=`
+  <div class="card">
+    <div class="card-title">🤖 Asistente IA — Transferencias 3.0</div>
+    <div class="alert info"><span>ℹ️</span><span>
+      El asistente está entrenado sobre los documentos oficiales del ecosistema:
+      <strong>EMV QRCPS v1.0</strong>, <strong>CIMPRA 525, 530, 535 y 540</strong>.
+      Podés hacerle preguntas técnicas en lenguaje natural y te responde citando las fuentes.
+    </span></div>
+    <div style="background:#0d1625;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em">¿Qué podés preguntarle?</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${[
+          '¿Cuáles son los campos obligatorios para un QR estático de transferencia?',
+          '¿Qué diferencia hay entre un QR estático y uno dinámico según el BCRA?',
+          '¿Para qué sirve el subcampo 98 y cuándo es obligatorio?',
+          '¿Qué es el dominio invertido y cómo se usa en el template 26?',
+          '¿Qué campos del template 62 define el CIMPRA 530?',
+          '¿Cómo funciona la tabla de resolución de URL de aceptadors?',
+          '¿Qué es el API resolve y cuándo se usa el subcampo 99?',
+          '¿Cómo se calcula el CRC16 y por qué es importante?',
+        ].map(q=>`
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--text);line-height:1.5;cursor:pointer;transition:.15s"
+               onclick="document.getElementById('ai-copied').textContent=this.innerText;document.getElementById('ai-copied').style.display='block';navigator.clipboard&&navigator.clipboard.writeText(this.innerText)"
+               onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            💬 ${q}
+          </div>`).join('')}
+      </div>
+      <p id="ai-copied" style="display:none;font-size:11px;color:var(--accent);margin-top:8px;text-align:center">✅ Pregunta copiada al portapapeles</p>
+    </div>
+
+    <div style="background:#0d1625;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em">Documentos cargados en el asistente</p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${[
+          {name:'EMV QRCPS v1.0 — Merchant-Presented Mode',src:'EMVCo',color:'var(--accent2)'},
+          {name:'CIMPRA 525 — Primera IEP: dominio invertido y flujos',src:'BCRA',color:'#c084fc'},
+          {name:'CIMPRA 530 — CUIT admin, API resolve, MCC, campo 61',src:'BCRA',color:'#c084fc'},
+          {name:'CIMPRA 535 — QR con tarjeta de crédito, brands, templates 80+',src:'BCRA',color:'var(--warn)'},
+          {name:'CIMPRA 540 — Métodos de pago habilitados, max BINs',src:'BCRA',color:'var(--warn)'},
+        ].map(d=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px">
+            <span style="width:6px;height:6px;border-radius:50%;background:${d.color};flex-shrink:0"></span>
+            <span style="font-size:12px;color:var(--text);flex:1">${d.name}</span>
+            <span style="font-size:10px;color:var(--muted);font-family:var(--mono)">${d.src}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <a href="https://notebooklm.google.com/notebook/a8b26537-adbc-4cca-ba45-46911eb68142" target="_blank" rel="noopener noreferrer"
+       style="display:flex;align-items:center;justify-content:center;gap:12px;
+              background:linear-gradient(135deg,#4285f4,#1a73e8);
+              color:#fff;border:none;padding:16px 20px;border-radius:12px;
+              font-size:14px;font-weight:700;cursor:pointer;font-family:var(--sans);
+              text-decoration:none;transition:.15s;letter-spacing:.04em;margin-bottom:10px"
+       onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+      </svg>
+      Abrir asistente en NotebookLM
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="white" style="opacity:.7">
+        <path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+      </svg>
+    </a>
+    <p style="font-size:10px;color:var(--muted);text-align:center;line-height:1.6">
+      Se abre en una nueva pestaña · No requiere cuenta de Google para consultar · 
+      Las respuestas citan el documento y página de origen
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💡 Tips para mejores respuestas</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${[
+        {icon:'🎯',tip:'Sé específico con el contexto: mencioná si es QR estático o dinámico, si es PCT o tarjeta'},
+        {icon:'📋',tip:'Podés pegar un string EMV y preguntarle qué significa cada campo'},
+        {icon:'🔗',tip:'Preguntale por el número de sección del CIMPRA para ir directo a la fuente'},
+        {icon:'⚠️',tip:'Para dudas sobre tarjeta de crédito, aclaralo: usa CIMPRA 535/540 que son opcionales para PCT'},
+      ].map(t=>`
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:#0d1625;border-radius:8px;border:1px solid var(--border)">
+          <span style="font-size:16px;flex-shrink:0">${t.icon}</span>
+          <span style="font-size:12px;color:var(--muted);line-height:1.6">${t.tip}</span>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+
+// ══════════════════════════════════
+// TAB: WIZARD
+// ══════════════════════════════════
+let wiz = {};
+
+function renderWizard(app){
+  // estado inicial
+  wiz = {
+    step: 0,
+    answers: {
+      initMethod: '',    // 01
+      merchantName: '',  // 59
+      city: '',          // 60
+      mccCode: '',       // 52
+      mccLabel: '',
+      aceptadorDomain: '', // 26.00
+      adminCuit: '',     // 26.98
+      usaApiResolve: '',  // 26.99 — se asigna en paso 6
+      amount: '',        // 54
+      postalCode: '',    // 61
+      qrId: '',          // 62.05
+      qrId: '',          // 62.05 — obligatorio sin API resolve
+      terminalId: '',    // 62.07
+      pointOfSale: '',   // 62.03
+    }
+  };
+  app.innerHTML = '<div class="wiz-wrap" id="wiz-root"></div>';
+  renderWizStep();
+}
+
+// Definición de pasos
+function getSteps(){
+  const a = wiz.answers;
+  const isDyn = a.initMethod === '12';
+  const steps = [
+    // 0
+    {
+      id: 'initMethod',
+      q: '¿Cómo vas a usar este QR?',
+      hint: 'El QR estático es ideal para tener impreso en el mostrador. El dinámico se genera por transacción y puede incluir monto fijo.',
+      type: 'options',
+      options: [
+        {value:'11', title:'QR Estático', desc:'El mismo QR para múltiples pagos. Ideal para imprimir y pegar. El cliente ingresa el monto.'},
+        {value:'12', title:'QR Dinámico', desc:'Un QR por transacción. Incluye el monto fijo. Requiere sistema que lo genere cada vez.'},
+      ]
+    },
+    // 1
+    {
+      id: 'merchantName',
+      q: '¿Cómo se llama tu comercio?',
+      hint: 'Nombre que aparece en la app del cliente al escanear. Máximo 25 caracteres.',
+      type: 'text', placeholder: 'Ej: PANADERIA EL TRIGO', maxlen: 25,
+    },
+    // 2
+    {
+      id: 'city',
+      q: '¿En qué ciudad está tu comercio?',
+      hint: 'Máximo 15 caracteres.',
+      type: 'text', placeholder: 'Ej: BUENOS AIRES', maxlen: 15,
+    },
+    // 3
+    {
+      id: 'mcc',
+      q: '¿A qué rubro pertenece tu negocio?',
+      hint: 'El código MCC categoriza el tipo de comercio según la tabla VISA/AFIP (CIMPRA 530).',
+      type: 'mcc',
+    },
+    // 4
+    {
+      id: 'aceptadorDomain',
+      q: '¿Cuál es el dominio invertido de tu aceptador?',
+      hint: 'Tu aceptador (banco, procesador o billetera) te provee este dato. Formato dominio invertido. Ej: <code>ar.com.modo</code>, <code>com.coelsa</code>.',
+      type: 'text', placeholder: 'Ej: ar.com.modo',
+    },
+    // 5
+    {
+      id: 'adminCuit',
+      q: '¿Cuál es el CUIT del administrador del esquema?',
+      hint: 'Tu aceptador también te provee este dato. 11 dígitos sin puntos ni guiones. (CIMPRA 530, subcampo 98)',
+      type: 'text', placeholder: 'Ej: 30714100803', maxlen: 11, inputmode: 'numeric',
+    },
+    // 6 — API resolve (siempre, para cualquier tipo de QR)
+    {
+      id: 'usaApiResolve',
+      q: '¿Tu aceptador usa API resolve?',
+      hint: 'Con API resolve (subcampo 99=1), la billetera consulta al aceptador para obtener los datos de la transacción. Sin API resolve (subcampo 99=0), el QR debe ser autosuficiente con CVU embebido.',
+      type: 'options',
+      options: [
+        {value:'1', title:'Sí usa API resolve (subcampo 99=1)', desc:'La billetera consulta al aceptador. Recomendado. La mayoría de los aceptadores lo usan.'},
+        {value:'0', title:'No usa API resolve (subcampo 99=0)', desc:'El QR es autosuficiente. Requiere CVU/CBU embebido en template 51.'},
+      ]
+    },
+    // 7 — CVU solo si NO usa API resolve
+    ...(a.usaApiResolve==='0' ? [{
+      id: 'cvu',
+      q: '¿Cuál es el CVU o CBU del aceptador?',
+      hint: 'Sin API resolve, el CVU/CBU debe ir embebido en el QR (template 51). 22 dígitos. (CIMPRA 525)',
+      type: 'text', placeholder: 'Ej: 0000074900000000000000', maxlen: 22, inputmode: 'numeric',
+    }] : []),
+    // 7b — ID del QR (62.05) obligatorio cuando no usa API resolve
+    ...(a.usaApiResolve==='0' ? [{
+      id: 'qrId',
+      q: '¿Cuál es el ID único de este QR?',
+      hint: 'Sin API resolve, la billetera usa este campo como identificador de la transacción (order.id). Debe ser único por QR generado. Podés usar un UUID o un código propio. (CIMPRA 530, campo 62.05)',
+      type: 'text', placeholder: 'Ej: a193244a-c224-4fc0-9ce3-b9defb43efb7', maxlen: 36,
+    }] : []),
+    // 8 — Monto solo si dinámico
+    ...(isDyn ? [{
+      id: 'amount',
+      q: '¿Cuál es el monto de la transacción?',
+      hint: 'En QR dinámico el monto va embebido en el QR. Usá punto como separador decimal.',
+      type: 'text', placeholder: 'Ej: 1500.00', inputmode: 'decimal',
+    }] : []),
+    // 9 — Código postal solo si dinámico
+    ...(isDyn ? [{
+      id: 'postalCode',
+      q: '¿Cuál es el código postal de tu comercio?',
+      hint: 'Obligatorio en QR dinámico (CIMPRA 530). Formato alfanumérico, 8 posiciones. Ej: B1870BWA, C1001AAA.',
+      type: 'text', placeholder: 'Ej: C1001AAA', maxlen: 8,
+    }] : []),
+    // 10 — POS (opcional)
+    {
+      id: 'pointOfSale',
+      q: '¿Querés identificar el punto de venta?',
+      hint: 'Opcional. Nombre o código de la sucursal o caja. (CIMPRA 530, campo 62.03)',
+      type: 'text', placeholder: 'Ej: SUCURSAL-CENTRO', optional: true,
+    },
+    // 11 — Terminal (opcional)
+    {
+      id: 'terminalId',
+      q: '¿Querés identificar la terminal o dispositivo?',
+      hint: 'Opcional. Código del dispositivo POS. (CIMPRA 530, campo 62.07)',
+      type: 'text', placeholder: 'Ej: TRM-001', optional: true,
+    },
+  ];
+  return steps;
+}
+
+
+function renderWizStep(){
+  const steps = getSteps();
+  const total = steps.length;
+  const step = wiz.step;
+  const root = document.getElementById('wiz-root');
+  if(!root) return;
+  if(step >= total){ renderWizFinal(); return; }
+  const s = steps[step];
+
+  // Progress — solo muestra max 8 dots para no saturar
+  const showMax = 8;
+  const from = Math.max(0, step - 3);
+  const to = Math.min(total, from + showMax);
+  let prog = '';
+  for(let i=from;i<to;i++){
+    const cls = i<step?'done':i===step?'active':'';
+    prog += `<div class="wiz-dot ${cls}">${i<step?'✓':i+1}</div>`;
+    if(i<to-1) prog += `<div class="wiz-line ${i<step?'done':''}"></div>`;
+  }
+
+  // Preview EMV
+  const prev = buildWizEMV(true);
+
+  // Contenido del paso
+  let body = '';
+  if(s.type === 'options'){
+    body = `<div class="wiz-opts">${s.options.map(o=>`
+      <button class="wiz-opt ${wiz.answers[s.id]===o.value?'selected':''}"
+        onclick="wiz.answers['${s.id}']='${o.value}';renderWizStep()">
+        <div class="wiz-opt-radio"></div>
+        <div class="wiz-opt-body">
+          <span class="wiz-opt-title">${o.title}</span>
+          <span class="wiz-opt-desc">${o.desc}</span>
+        </div>
+      </button>`).join('')}</div>`;
+  } else if(s.type === 'mcc'){
+    const groups = [
+      {label:'Alimentación',items:[{v:'5411',l:'Supermercados'},{v:'5499',l:'Alimentos varios'},{v:'5812',l:'Restaurantes / bares'}]},
+      {label:'Combustible y transporte',items:[{v:'5541',l:'Estaciones de servicio'},{v:'5983',l:'Combustibles'},{v:'4111',l:'Transporte local'}]},
+      {label:'Salud',items:[{v:'5912',l:'Farmacias'},{v:'8099',l:'Servicios de salud'}]},
+      {label:'Comercio',items:[{v:'5999',l:'Comercio general'},{v:'5094',l:'Joyería / metales'}]},
+      {label:'Servicios',items:[{v:'7299',l:'Servicios personales'},{v:'4814',l:'Telecomunicaciones'},{v:'4900',l:'Electricidad / gas / agua'},{v:'7011',l:'Hoteles'}]},
+      {label:'Educación y gobierno',items:[{v:'8299',l:'Educación'},{v:'9399',l:'Servicios gubernamentales'}]},
+      {label:'Construcción',items:[{v:'1520',l:'Contratistas'},{v:'5039',l:'Materiales de construcción'}]},
+    ];
+    body = `<select class="wiz-select" id="wiz-mcc"
+      onchange="wiz.answers.mccCode=this.value;wiz.answers.mccLabel=this.options[this.selectedIndex].text">
+      <option value="">— Seleccioná tu rubro —</option>
+      ${groups.map(g=>`<optgroup label="${g.label}">${g.items.map(i=>`<option value="${i.v}" ${wiz.answers.mccCode===i.v?'selected':''}>${i.v} – ${i.l}</option>`).join('')}</optgroup>`).join('')}
+    </select>`;
+  } else {
+    body = `<input class="wiz-input" id="wiz-input"
+      type="text" inputmode="${s.inputmode||'text'}"
+      placeholder="${s.placeholder||''}"
+      value="${esc(wiz.answers[s.id]||'')}"
+      maxlength="${s.maxlen||99}"
+      oninput="wiz.answers['${s.id}']=this.value"
+      onkeydown="if(event.key==='Enter')wizNext()">`;
+  }
+
+  root.innerHTML = `
+    <div class="wiz-progress">${prog}</div>
+
+    <div class="wiz-preview">
+      <div class="wiz-preview-title">String EMV construido hasta acá</div>
+      <div class="wiz-tokens">${prev||'<span style="color:var(--border)">Se irá construyendo con cada respuesta…</span>'}</div>
+    </div>
+
+    <div class="wiz-card">
+      <div class="wiz-step-label">Paso ${step+1} de ${total}</div>
+      <div class="wiz-q">${s.q}</div>
+      <div class="wiz-hint">${s.hint}</div>
+      ${body}
+      <div class="wiz-nav">
+        ${step>0?`<button class="wiz-btn-back" onclick="wizBack()">← Atrás</button>`:''}
+        ${s.optional?`<button class="wiz-btn-skip" onclick="wiz.answers['${s.id}']='';wizNext()">Omitir</button>`:''}
+        <button class="wiz-btn-next" onclick="wizNext()">
+          ${step===total-1?'Generar QR ⚡':'Siguiente →'}
+        </button>
+      </div>
+    </div>`;
+
+  setTimeout(()=>{const el=document.getElementById('wiz-input');if(el)el.focus()},80);
+}
+
+function wizNext(){
+  const steps = getSteps();
+  const s = steps[wiz.step];
+  // Validar
+  if(s.type==='options' && !wiz.answers[s.id]){
+    alert('Por favor elegí una opción para continuar.');return;
+  }
+  if(s.type==='mcc' && !wiz.answers.mccCode){
+    alert('Por favor seleccioná tu rubro.');return;
+  }
+  if(s.type==='text' && !s.optional && !(wiz.answers[s.id]||'').trim()){
+    alert('Este campo es obligatorio.');return;
+  }
+  wiz.step++;
+  renderWizStep();
+}
+
+function wizBack(){
+  if(wiz.step>0){ wiz.step--; renderWizStep(); }
+}
+
+function buildWizEMV(preview=false){
+  const a = wiz.answers;
+  const isDyn = a.initMethod==='12';
+  let tokens = [];
+  const tok = (id,val,label) => ({id,val:String(val),label:label||''});
+
+  // 00+01: encabezado
+  if(a.initMethod){
+    tokens.push(tok('00','01','Payload Format Indicator'));
+    tokens.push(tok('01',a.initMethod, isDyn?'Dinámico':'Estático'));
+  }
+
+  // 26: Merchant Account Template
+  // Solo agrega subcampos que el usuario ya respondió explícitamente
+  if(a.aceptadorDomain){
+    let inner = tlv('00', a.aceptadorDomain);                        // REQ siempre
+    if(a.adminCuit)         inner += tlv('98', a.adminCuit);         // si respondió (paso 5)
+    if(a.usaApiResolve!=='') inner += tlv('99', a.usaApiResolve==='0'?'00':'01'); // '00'=no usa, '01'=usa (2 dígitos según práctica real)
+    tokens.push(tok('26', inner, 'Template aceptador'));
+  }
+
+  // 51: CVU embebido si no usa API resolve y ya lo ingresó
+  if(a.usaApiResolve==='0' && a.cvu){
+    tokens.push(tok('51', tlv('00',a.cvu), 'CVU/CBU aceptador'));
+  }
+
+  // 52-61: datos del comercio
+  if(a.mccCode)            tokens.push(tok('52', a.mccCode, a.mccLabel||'MCC'));
+  if(a.initMethod)         tokens.push(tok('53', '032', 'ARS'));
+  if(a.amount){const amtW=a.amount.includes('.')?a.amount:a.amount+'.00'; tokens.push(tok('54',amtW,'Monto'));}
+  if(a.initMethod)         tokens.push(tok('58', 'AR', 'Argentina'));
+  if(a.merchantName)       tokens.push(tok('59', a.merchantName.trim(), 'Nombre comercio'));
+  if(a.city)               tokens.push(tok('60', a.city, 'Ciudad'));
+  if(isDyn && a.postalCode) tokens.push(tok('61', a.postalCode, 'Código postal'));
+
+  // 62: additional data (solo si hay algo)
+  let inner62 = '';
+  if(a.qrId)         inner62 += tlv('05', a.qrId);          // 62.05: obligatorio sin API resolve
+  if(a.pointOfSale)  inner62 += tlv('03', a.pointOfSale);
+  if(a.terminalId)   inner62 += tlv('07', a.terminalId);
+  if(inner62)        tokens.push(tok('62', inner62, 'Datos adicionales'));
+
+  if(preview){
+    return tokens.map(t=>{
+      const v=t.val;
+      const id=t.id.padStart(2,'0');
+      const len=String(v.length).padStart(2,'0');
+      return '<span title="'+esc(t.label)+'"><span class="wt-id">'+id+'</span><span class="wt-len">'+len+'</span><span class="wt-val">'+esc(v)+'</span><span class="wt-sep">·</span></span>';
+    }).join('');
+  }
+
+  // String final
+  let s='';
+  for(const t of tokens) s += tlv(t.id.padStart(2,'0'), t.val);
+  s += '6304' + crc16(s+'6304');
+  return s;
+}
+
+
+function renderWizFinal(){
+  const root = document.getElementById('wiz-root');
+  const a = wiz.answers;
+  const isDyn = a.initMethod==='12';
+  const emvStr = buildWizEMV(false);
+
+  const summaryRows = [
+    {label:'Tipo de QR', val:isDyn?'Dinamico':'Estatico'},
+    {label:'Nombre comercio', val:a.merchantName},
+    {label:'Ciudad', val:a.city},
+    {label:'Rubro (MCC)', val:a.mccLabel||a.mccCode},
+    {label:'Dominio aceptador', val:a.aceptadorDomain},
+    {label:'CUIT administrador', val:a.adminCuit},
+    {label:'API resolve', val:a.usaApiResolve==='0'?'No (CVU embebido)':'Si'},
+  ];
+  if(a.usaApiResolve==='0'&&a.qrId)   summaryRows.push({label:'ID del QR (62.05)', val:a.qrId});
+  if(a.usaApiResolve==='0'&&a.cvu)    summaryRows.push({label:'CVU/CBU', val:a.cvu});
+  if(isDyn&&a.amount)                  summaryRows.push({label:'Monto', val:'$ '+a.amount});
+  if(isDyn&&a.postalCode)              summaryRows.push({label:'Codigo postal', val:a.postalCode});
+  if(a.pointOfSale)                    summaryRows.push({label:'Punto de venta', val:a.pointOfSale});
+  if(a.terminalId)                     summaryRows.push({label:'Terminal', val:a.terminalId});
+
+  // Construir HTML con concatenación pura
+  var h = '';
+  h += '<div class="wiz-final">';
+  h += '<div style="font-size:32px;margin-bottom:6px">&#127881;</div>';
+  h += '<div style="font-size:18px;font-weight:800;color:var(--accent);margin-bottom:4px">&#161;Tu QR est&#225; listo!</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Construido seg&#250;n EMV QRCPS + CIMPRA 525/530</div>';
+  h += '<div class="wiz-final-qr"><div id="wiz-qr-canvas" style="background:#fff;padding:10px;border-radius:8px;box-shadow:0 0 0 1px var(--border),0 0 40px rgba(0,212,170,.1);position:relative;display:inline-block"></div></div>';
+
+  // Resumen
+  h += '<div class="wiz-summary" style="margin-bottom:14px">';
+  h += '<p style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Resumen de tu QR</p>';
+  for(var i=0;i<summaryRows.length;i++){
+    var r=summaryRows[i];
+    h += '<div class="wiz-sum-row"><span class="wiz-sum-lbl">'+esc(r.label)+'</span><span class="wiz-sum-val">'+esc(r.val)+'</span></div>';
+  }
+  h += '</div>';
+
+  // String EMV
+  h += '<div style="background:#0d1625;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:10px;color:var(--accent);word-break:break-all;line-height:1.9;margin-bottom:14px">';
+  h += '<p style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">String EMV completo con CRC</p>';
+  h += esc(emvStr);
+  h += '</div>';
+
+  // Botones
+  h += '<button class="copy-btn" id="wiz-copy-btn" style="margin-bottom:10px">&#128203; Copiar string EMV</button>';
+  h += '<div style="display:flex;gap:8px;margin-bottom:10px">';
+  h += '<button class="copy-btn" id="wiz-copy-img-btn" style="background:#1e2d45;color:var(--text);flex:1">&#128247; '+(isMobile()?'Compartir QR':'Copiar QR')+'</button>';
+  h += '<button class="copy-btn" id="wiz-dl-btn" style="background:#1e2d45;color:var(--text);flex:1">&#11015; Descargar JPG</button>';
+  h += '</div>';
+  h += '<div style="display:flex;gap:8px">';
+  h += '<button class="build-btn" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text)" onclick="wiz.step=0;wiz.answers={initMethod:\'\',merchantName:\'\',city:\'\',mccCode:\'\',mccLabel:\'\',aceptadorDomain:\'\',adminCuit:\'\',usaApiResolve:\'\',cvu:\'\',qrId:\'\',amount:\'\',postalCode:\'\',pointOfSale:\'\',terminalId:\'\'};;renderWizStep()">&#8617; Empezar de nuevo</button>';
+  h += '<button class="build-btn" style="flex:1" onclick="showTab(\'build\',document.querySelectorAll(\'.tab-btn\')[1])">&#9881;&#65039; Ir al Constructor</button>';
+  h += '</div></div>';
+
+  root.innerHTML = h;
+
+  // Generar QR y asignar listeners DESPUÉS de que el DOM esté listo
+  setTimeout(function(){
+    renderQRWithLogo('wiz-qr-canvas', emvStr);
+    var cb = document.getElementById('wiz-copy-btn');
+    var ci = document.getElementById('wiz-copy-img-btn');
+    var dl = document.getElementById('wiz-dl-btn');
+    if(cb) cb.onclick = function(){ copyText(emvStr, this); };
+    if(ci) ci.onclick = function(){ copyQRImage('wiz-qr-canvas', this); };
+    if(dl) dl.onclick = function(){ downloadQRJPG('wiz-qr-canvas', 'qr-wizard'); };
+  }, 50);
+}
+
+
+
+const FAQ_DATA = [
+  {
+    section: '📋 Encabezado (ID 00–01)',
+    items: [
+      {q:'¿Qué es el Payload Format Indicator (ID 00)?',
+       a:'Es el primer campo obligatorio del QR. Siempre tiene el valor <code>01</code> e indica que el QR sigue el formato EMV QRCPS v1.0. No se puede omitir ni cambiar.'},
+      {q:'¿Qué diferencia hay entre QR estático (01=11) y QR dinámico (01=12)?',
+       a:'El QR <strong>estático</strong> es el mismo para múltiples transacciones — el cliente ingresa el monto en su billetera. El QR <strong>dinámico</strong> se genera por transacción e incluye el monto fijo; requiere un sistema que lo genere cada vez. En QR dinámico, el campo 54 (monto) y el 61 (código postal) son obligatorios según CIMPRA 530.'},
+      {q:'¿Es obligatorio incluir el campo 01 (Point of Initiation)?',
+       a:'No es estrictamente obligatorio según EMV, pero sí es una buena práctica. Si no se incluye, la billetera puede no saber si el QR es estático o dinámico. Para Transferencias 3.0 se recomienda siempre incluirlo.'},
+    ]
+  },
+  {
+    section: '🏦 Merchant Account Information (ID 26–49)',
+    items: [
+      {q:'¿Qué es el dominio invertido y por qué es obligatorio?',
+       a:'El dominio invertido (subcampo 00 del template 26-49) identifica al aceptador. La billetera lo usa como clave en la tabla de resolución para encontrar la URL de la API del aceptador. Siempre es obligatorio, tanto en QR estático como dinámico. Ejemplo: <code>ar.com.modo</code>, <code>com.coelsa</code>, <code>com.prisma</code>. (CIMPRA 525)'},
+      {q:'¿Cuál es la diferencia entre el dominio invertido y una URL?',
+       a:'La versión inicial del BCRA usaba una URL como <code>https://www.191.com.ar</code>. Los CIMPRA posteriores (525 en adelante) reemplazaron esto por un <strong>dominio invertido</strong>, que es más compacto y es la clave de búsqueda en la tabla de resolución. No pongas una URL completa en este campo.'},
+      {q:'¿Qué es el subcampo 98 y cuándo es obligatorio?',
+       a:'El subcampo 98 contiene el <strong>CUIT del administrador del esquema</strong> (el aceptador o procesador). Son 11 dígitos sin puntos ni guiones. En QR dinámico es obligatorio según CIMPRA 530. En QR estático es recomendado pero opcional.'},
+      {q:'¿Qué es la API resolve y qué indica el subcampo 99?',
+       a:'La API resolve es el mecanismo por el cual la billetera del pagador consulta al aceptador para validar y completar la transacción. El subcampo 99 indica si el aceptador usa este mecanismo: <code>1</code> = sí usa (la mayoría de los casos), <code>0</code> = no usa (el QR debe ser autosuficiente con CVU embebido en templates 50/51). (CIMPRA 530)'},
+      {q:'¿Se puede poner más de un template (ej: 26 y 27)?',
+       a:'Sí. El mismo QR puede contener múltiples Merchant Account Templates (IDs 26 a 49), uno por aceptador o esquema de pago. Cada template debe tener un dominio invertido distinto. No se puede repetir el mismo ID de template.'},
+      {q:'¿Qué ID de template debo usar para Transferencias 3.0 Argentina?',
+       a:'El rango disponible es 26 a 49. El ID específico lo asigna el ecosistema: por ejemplo, Modo usa un ID, Coelsa otro. Lo que identifica al esquema no es el número del template sino el <strong>dominio invertido</strong> en el subcampo 00.'},
+    ]
+  },
+  {
+    section: '💳 CVU/CBU del aceptador (ID 50–51)',
+    items: [
+      {q:'¿Para qué sirven los templates 50 y 51?',
+       a:'Los templates 50 y 51 permiten incluir el <strong>CUIT</strong> y el <strong>CVU/CBU</strong> del aceptador directamente en el QR. Esto hace que el QR sea autosuficiente: la billetera puede acreditar sin consultar la API resolve. Se usan principalmente cuando el subcampo 99 es <code>0</code> (no usa API resolve). (CIMPRA 525)'},
+      {q:'¿El CVU tiene siempre 22 dígitos?',
+       a:'Sí. El CVU (Clave Virtual Uniforme) emitido por billeteras y el CBU bancario tienen siempre exactamente 22 dígitos numéricos. No se usan separadores ni espacios.'},
+      {q:'¿Siempre debo incluir el CVU/CBU en el QR?',
+       a:'No necesariamente. Si tu aceptador usa API resolve (subcampo 99 = <code>1</code>), la billetera obtiene el CVU a través de la API y no necesitás embebérselo en el QR. Si no usás API resolve, sí es necesario incluirlo en el template 51.'},
+    ]
+  },
+  {
+    section: '🏪 Datos del Comercio (ID 52–61)',
+    items: [
+      {q:'¿Qué es el MCC y cómo lo obtengo?',
+       a:'El Merchant Category Code (ID 52) es un código de 4 dígitos que categoriza el tipo de negocio según la tabla VISA/AFIP (CIMPRA 530). Lo asigna tu aceptador al momento del alta. Si no lo tenés, usá <code>5999</code> (comercio minorista general) como valor provisorio.'},
+      {q:'¿Qué código de moneda debo usar?',
+       a:'Para pesos argentinos usá <code>032</code> (ISO 4217). Para dólares <code>840</code>. El campo 53 es obligatorio.'},
+      {q:'¿El monto es obligatorio?',
+       a:'Depende del tipo de QR. En QR <strong>estático</strong> (01=11) el monto es opcional — el cliente lo ingresa. En QR <strong>dinámico</strong> (01=12) el monto es obligatorio según EMV y CIMPRA 530.'},
+      {q:'¿Qué formato debe tener el monto?',
+       a:'Solo dígitos y un punto decimal. Válidos: <code>1500.00</code>, <code>99.50</code>, <code>1500</code>. Inválidos: <code>1.500,00</code> (coma), <code>1 500</code> (espacio). El separador decimal es siempre el punto.'},
+      {q:'¿Para qué sirve el código postal (ID 61) y por qué a veces es obligatorio?',
+       a:'El código postal identifica la ubicación del comercio. En QR <strong>dinámico</strong> es obligatorio según CIMPRA 530. Debe tener formato alfanumérico de 8 posiciones. Ejemplo: <code>C1001AAA</code> (CABA), <code>B1870BWA</code> (Avellaneda).'},
+      {q:'¿Cuántos caracteres puede tener el nombre del comercio?',
+       a:'El campo 59 (Merchant Name) acepta hasta 25 caracteres alfanuméricos. Es lo que aparece en la pantalla del cliente al escanear el QR, así que conviene que sea reconocible.'},
+    ]
+  },
+  {
+    section: '📎 Additional Data Field Template (ID 62)',
+    items: [
+      {q:'¿El template 62 es obligatorio?',
+       a:'No. El template 62 es completamente opcional. Sin embargo, CIMPRA 530 define campos específicos dentro de él que son relevantes para el ecosistema argentino.'},
+      {q:'¿Qué campos del 62 define CIMPRA 530?',
+       a:'<strong>62.03</strong> = Point of Sale (nombre o código de la sucursal). <strong>62.05</strong> = ID único del QR (importante para rastreo y devoluciones). <strong>62.07</strong> = Device POS (identificador del dispositivo). <strong>62.08</strong> = Tipo de compra, donde <code>00</code> = compra normal. <strong>62.10</strong> = CUIT del comercio. <strong>62.11</strong> = Número de sucursal.'},
+      {q:'¿Qué significa el valor "***" en un campo del template 62?',
+       a:'El valor <code>***</code> es una convención EMV que indica que la <strong>billetera del consumidor debe solicitar ese dato al usuario</strong>. Por ejemplo, <code>62.01</code> con valor <code>***</code> le pide al cliente que ingrese el número de factura antes de confirmar el pago.'},
+      {q:'¿El ID del QR (62.05) debe ser único?',
+       a:'Sí. El campo 62.05 debe contener un identificador único por QR generado, especialmente en QR dinámico. Es clave para la trazabilidad y para gestionar devoluciones parciales (CIMPRA 530).'},
+    ]
+  },
+  {
+    section: '🔓 Unreserved Templates (ID 80–99)',
+    items: [
+      {q:'¿Para qué se usan los Unreserved Templates?',
+       a:'Los templates de ID 80 a 99 son de uso libre. Cualquier parte (aceptador, billetera, procesador) puede definir su propio template con datos propietarios, siempre que incluya un GUID en el subcampo 00 que identifique el esquema. CIMPRA 535 los usa para datos de tarjeta de crédito sin IEP.'},
+      {q:'¿Siempre debo incluir un GUID en el subcampo 00?',
+       a:'Sí, es obligatorio según EMV spec. El GUID puede ser un AID, un UUID sin guiones, o un dominio invertido. Identifica el contexto de los datos que le siguen dentro del template.'},
+    ]
+  },
+  {
+    section: '🔐 CRC y estructura TLV',
+    items: [
+      {q:'¿Qué es el CRC y por qué está siempre al final?',
+       a:'El CRC (ID 63) es un checksum CRC16-CCITT que verifica la integridad del QR. Siempre va último porque se calcula sobre todos los campos anteriores incluyendo su propio ID y longitud (<code>6304</code>), pero excluyendo su valor final. Si cualquier campo cambia, el CRC cambia.'},
+      {q:'¿Cómo se calcula el CRC16?',
+       a:'Algoritmo XMODEM: polinomio <code>0x1021</code>, semilla inicial <code>0xFFFF</code>, sin reflexión de bits. Se aplica sobre el string UTF-8 completo hasta <code>6304</code> inclusive. El resultado son 4 caracteres hexadecimales en mayúsculas.'},
+      {q:'¿Qué es un TLV?',
+       a:'Tag-Length-Value. Cada campo del QR tiene 3 partes: <strong>ID</strong> (2 dígitos, ej: <code>59</code>), <strong>longitud</strong> (2 dígitos, ej: <code>14</code>), y <strong>valor</strong> (N chars, ej: <code>MI COMERCIO SRL</code>). Concatenados dan: <code>591414MI COMERCIO SRL</code>.'},
+      {q:'¿El payload del QR tiene un límite de tamaño?',
+       a:'EMV spec recomienda no superar 512 caracteres alfanuméricos. Más allá de ese límite el QR se vuelve más denso y difícil de escanear con cámaras de baja resolución. Esta app te avisa si tu QR supera ese límite.'},
+    ]
+  },
+];
+
+function renderFAQ(app){
+  const notebookURL = 'https://notebooklm.google.com/notebook/a8b26537-adbc-4cca-ba45-46911eb68142';
+
+  // ── Secciones de referencia (de la Guía) ──
+  const guideHTML = `
+  <div class="card">
+    <div class="card-title" style="font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em">Marco Normativo</div>
+    <div class="card">
+      <div class="card-title">Marco normativo – Transferencias 3.0 Argentina</div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:8px">
+        El QR para pagos con transferencia en Argentina se basa en <strong style="color:var(--text)">EMV QRCPS v1.0 (Merchant-Presented Mode)</strong> como estándar base, 
+        complementado por los <strong style="color:var(--text)">Boletines CIMPRA</strong> que definen las reglas operativas específicas del ecosistema argentino.
+      </p>
+      <table class="emv-table">
+        <thead><tr><th>Documento</th><th>Tema principal</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><a href="https://www.emvco.com/emv-technologies/qrcodes/" target="_blank" style="color:var(--accent2);text-decoration:none">EMV QRCPS v1.0 ↗</a></td>
+            <td>Estructura TLV, campos raíz 00-99, CRC16-CCITT, templates anidados</td>
+          </tr>
+          <tr>
+            <td><a href="https://www.bcra.gob.ar/pdfs/sistemasfinancierosydepagos/SNP3525.pdf" target="_blank" style="color:#c084fc;text-decoration:none">CIMPRA 525 ↗</a></td>
+            <td>Primera IEP: dominio invertido en subcampo 00, tabla de resolución URL, flujos de escenarios (open/closed/pending…), QR estático y dinámico</td>
+          </tr>
+          <tr>
+            <td><a href="https://www.bcra.gob.ar/archivos/Pdfs/SistemasFinancierosYdePagos/Boletin_CIMPRA_530.pdf" target="_blank" style="color:#c084fc;text-decoration:none">CIMPRA 530 ↗</a></td>
+            <td>ID aceptador (subcampo 00 dominio invertido), CUIT admin (subcampo 98), API resolve (subcampo 99), MCC tabla VISA/AFIP, código postal 8 chars alfanum, devoluciones parciales</td>
+          </tr>
+          <tr>
+            <td><a href="https://www.bcra.gob.ar/Pdfs/SistemasFinancierosYdePagos/Boletin_CIMPRA_535.pdf" target="_blank" style="color:#f59e0b;text-decoration:none">CIMPRA 535 ↗ 💳</a></td>
+            <td><em style="color:var(--warn)">Solo tarjeta de crédito.</em> Brands (subcampo 01), flujo sin IEP, templates 80+ para firma/token</td>
+          </tr>
+          <tr>
+            <td><a href="https://www.bcra.gob.ar/archivos/Pdfs/SistemasFinancierosYdePagos/Boletin-CIMPRA-540.pdf" target="_blank" style="color:#f59e0b;text-decoration:none">CIMPRA 540 ↗ 💳</a></td>
+            <td><em style="color:var(--warn)">Solo tarjeta de crédito.</em> Mejoras al 535: subcampo 96 (métodos habilitados PCT/tarjeta) y subcampo 97 (máx BINs aceptados)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  <div class="card">
+      <div class="card-title">Campos raíz — tabla completa con fuente</div>
+      <table class="emv-table">
+        <thead><tr><th>ID</th><th>Nombre</th><th></th><th>Fuente / Notas</th></tr></thead>
+        <tbody>
+          <tr><td>00</td><td>Payload Format Indicator</td><td><span class="pill req">REQ</span></td><td>Siempre "01" — EMV</td></tr>
+          <tr><td>01</td><td>Point of Initiation Method</td><td><span class="pill opt">OPC</span></td><td>11=estático, 12=dinámico — EMV</td></tr>
+          <tr><td>26-49</td><td>Merchant Account Templates</td><td><span class="pill req">REQ</span></td><td>Subcampo 00=dominio invertido, 98=CUIT admin, 99=API resolve — CIMPRA 525/530</td></tr>
+          <tr><td>50-51</td><td>Templates CUIT/CVU aceptador</td><td><span class="pill opt">OPC</span></td><td>CIMPRA 525 (QR autosuficiente sin API)</td></tr>
+          <tr><td>52</td><td>MCC</td><td><span class="pill req">REQ</span></td><td>Tabla VISA/AFIP — CIMPRA 530</td></tr>
+          <tr><td>53</td><td>Transaction Currency</td><td><span class="pill req">REQ</span></td><td>032=ARS — EMV</td></tr>
+          <tr><td>54</td><td>Transaction Amount</td><td><span class="pill cond">COND</span></td><td>Obligatorio si 01=12 — EMV</td></tr>
+          <tr><td>55-57</td><td>Tip / Convenience</td><td><span class="pill opt">OPC</span></td><td>EMV</td></tr>
+          <tr><td>58</td><td>Country Code</td><td><span class="pill req">REQ</span></td><td>"AR" — EMV</td></tr>
+          <tr><td>59</td><td>Merchant Name</td><td><span class="pill req">REQ</span></td><td>Máx. 25 chars — EMV</td></tr>
+          <tr><td>60</td><td>Merchant City</td><td><span class="pill req">REQ</span></td><td>Máx. 15 chars — EMV</td></tr>
+          <tr><td>61</td><td>Postal Code</td><td><span class="pill cond">COND</span></td><td>8 chars alfanum, obligatorio en QR dinámico — CIMPRA 530</td></tr>
+          <tr><td>62</td><td>Additional Data Template</td><td><span class="pill opt">OPC</span></td><td>03=POS, 05=ID QR, 07=device, 08=tipo compra — CIMPRA 530</td></tr>
+          <tr><td>63</td><td>CRC</td><td><span class="pill req">REQ</span></td><td>CRC16-CCITT, siempre último — EMV</td></tr>
+          <tr><td>64</td><td>Language Template</td><td><span class="pill opt">OPC</span></td><td>Nombre/ciudad en idioma alternativo — EMV</td></tr>
+          <tr><td>80-99</td><td>Unreserved Templates</td><td><span class="pill opt">OPC</span></td><td>80=datos aceptador, 82=firma, 83=token — CIMPRA 535</td></tr>
+        </tbody>
+      </table>
+    </div>
+  <div class="card">
+      <div class="card-title">Subcampos del Template 62 — CIMPRA 530</div>
+      <table class="emv-table">
+        <thead><tr><th>ID</th><th>Nombre</th><th>Fuente</th></tr></thead>
+        <tbody>
+          <tr><td>62.01</td><td>Bill Number / Nro. Factura</td><td>EMV</td></tr>
+          <tr><td>62.02</td><td>Mobile Number</td><td>EMV</td></tr>
+          <tr><td>62.03</td><td>Point of Sale (Store Label)</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+          <tr><td>62.04</td><td>Loyalty Number</td><td>EMV</td></tr>
+          <tr><td>62.05</td><td>ID del QR / Reference Label</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+          <tr><td>62.06</td><td>Customer Label</td><td>EMV</td></tr>
+          <tr><td>62.07</td><td>Device POS / Terminal Label</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+          <tr><td>62.08</td><td>Tipo de compra – 00=compra</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+          <tr><td>62.09</td><td>Additional Consumer Data Request</td><td>EMV</td></tr>
+          <tr><td>62.10</td><td>CUIT del comercio / ID operación</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+          <tr><td>62.11</td><td>Sucursal</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
+          <tr><td>62.50-99</td><td>Templates de esquemas de pago</td><td>EMV</td></tr>
+        </tbody>
+      </table>
+    </div>
+  <div class="card">
+      <div class="card-title">Ejemplo completo CIMPRA 530</div>
+      <div class="code-sample" style="line-height:2">
+  <span style="color:var(--warn)">00</span>02<span style="color:var(--accent)">01</span>
+  <span style="color:var(--warn)">01</span>02<span style="color:var(--accent)">11</span>
+  <span style="color:var(--warn)">41</span>35
+    <span style="color:var(--accent2)">00</span>11<span style="color:#a78bfa">ar.com.modo</span>        ← dominio invertido
+    <span style="color:var(--accent2)">98</span>11<span style="color:#a78bfa">30714100803</span>        ← CUIT admin
+    <span style="color:var(--accent2)">99</span>02<span style="color:#a78bfa">01</span>                ← usa API resolve
+  <span style="color:var(--warn)">50</span>15<span style="color:var(--accent2)">00</span>11<span style="color:#a78bfa">20112223338</span>       ← CUIT aceptador
+  <span style="color:var(--warn)">51</span>26<span style="color:var(--accent2)">00</span>22<span style="color:#a78bfa">0720035920000000519854</span> ← CVU
+  <span style="color:var(--warn)">52</span>04<span style="color:var(--accent)">9700</span>              ← MCC tabla VISA
+  <span style="color:var(--warn)">53</span>03<span style="color:var(--accent)">032</span>               ← ARS
+  <span style="color:var(--warn)">58</span>02<span style="color:var(--accent)">AR</span>
+  <span style="color:var(--warn)">59</span>13<span style="color:var(--accent)">MERCHANT-NAME</span>
+  <span style="color:var(--warn)">60</span>13<span style="color:var(--accent)">MERCHANT-CITY</span>
+  <span style="color:var(--warn)">61</span>08<span style="color:var(--accent)">B1870BWA</span>          ← código postal 8 chars
+  <span style="color:var(--warn)">62</span>39
+    <span style="color:var(--accent2)">03</span>13<span style="color:#a78bfa">POINT_OF_SALE</span>     ← POS
+    <span style="color:var(--accent2)">10</span>11<span style="color:#a78bfa">20112223338</span>       ← CUIT comercio
+    <span style="color:var(--accent2)">11</span>03<span style="color:#a78bfa">522</span>              ← sucursal
+  <span style="color:var(--warn)">63</span>04<span style="color:var(--err)">967F</span></div>
+      <p style="font-size:10px;color:var(--muted);margin-top:8px">
+        <span style="color:var(--warn)">■</span> IDs raíz &nbsp; <span style="color:var(--accent2)">■</span> Sub-IDs &nbsp; <span style="color:#a78bfa">■</span> Valores &nbsp; <span style="color:var(--err)">■</span> CRC
+      </p>
+    </div>
+  </div>`;
+
+  // ── FAQ acordeón ──
+  let sectionsHTML = FAQ_DATA.map((sec,si)=>`
+    <div class="faq-section">
+      <div class="faq-section-hdr" onclick="toggleFAQSection(${si})" id="faq-hdr-${si}">
+        <span class="faq-section-title">${sec.section}</span>
+        <span class="faq-section-chev">&#9660;</span>
+      </div>
+      <div class="faq-items" id="faq-items-${si}">
+        ${sec.items.map((item,ii)=>`
+          <div class="faq-item" id="faq-item-${si}-${ii}">
+            <div class="faq-q" onclick="toggleFAQItem(${si},${ii})">
+              <span class="faq-q-text">${item.q}</span>
+              <span class="faq-q-icon">+</span>
+            </div>
+            <div class="faq-a" id="faq-a-${si}-${ii}">${item.a}</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  app.innerHTML = `
+  <div class="alert info"><span>&#8505;&#65039;</span><span>Preguntas frecuentes sobre construccion de QR para Transferencias 3.0 Argentina.</span></div>
+  ${sectionsHTML}`;
+
+  // Agregar secciones de referencia normativa
+  app.innerHTML += guideHTML;
+
+  // Agregar botón NotebookLM y tips
+  var iaSection = '<div class="card" style="margin-top:4px">';
+  iaSection += '<div class="card-title">&#129302; Asistente IA — NotebookLM</div>';
+  iaSection += '<p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">';
+  iaSection += 'El asistente tiene cargados los documentos oficiales: <strong style="color:var(--text)">EMV QRCPS v1.0</strong> y <strong style="color:var(--text)">CIMPRA 525, 530, 535 y 540</strong>. ';
+  iaSection += 'Podes hacerle preguntas tecnicas y responde citando la fuente y el numero de seccion.</p>';
+  iaSection += '<a href="'+notebookURL+'" target="_blank" rel="noopener noreferrer" ';
+  iaSection += 'style="display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(135deg,#4285f4,#1a73e8);';
+  iaSection += 'color:#fff;border:none;padding:14px 20px;border-radius:12px;font-size:14px;font-weight:700;';
+  iaSection += 'cursor:pointer;font-family:var(--sans);text-decoration:none;margin-bottom:14px">';
+  iaSection += '&#127311; Abrir asistente en NotebookLM &#8599;</a>';
+  iaSection += '<p style="font-size:10px;color:var(--muted);text-align:center;margin-bottom:16px">Se abre en nueva pestana &middot; Sin necesidad de cuenta &middot; Cita el documento y numero de pagina</p>';
+  iaSection += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">&#128161; Tips para mejores respuestas</div>';
+  var tips = [
+    ['&#127919;','Menciona si es QR estatico o dinamico y si es para PCT (dinero en cuenta) o tarjeta'],
+    ['&#128203;','Podes pegar un string EMV completo y preguntarle que significa cada campo'],
+    ['&#128279;','Preguntale por el numero de seccion del CIMPRA para ir directo a la fuente'],
+    ['&#9888;&#65039;','Para tarjeta de credito aclara CIMPRA 535/540 — son opcionales para PCT'],
+  ];
+  for(var i=0;i<tips.length;i++){
+    iaSection += '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:#0d1625;border-radius:8px;border:1px solid var(--border);margin-bottom:6px">';
+    iaSection += '<span style="font-size:14px;flex-shrink:0">'+tips[i][0]+'</span>';
+    iaSection += '<span style="font-size:12px;color:var(--muted);line-height:1.5">'+tips[i][1]+'</span></div>';
+  }
+  iaSection += '</div>';
+  app.innerHTML += iaSection;
+}
+
+
+function toggleFAQSection(si){
+  const hdr=document.getElementById('faq-hdr-'+si);
+  const items=document.getElementById('faq-items-'+si);
+  const isOpen=items.classList.contains('open');
+  hdr.classList.toggle('open',!isOpen);
+  items.classList.toggle('open',!isOpen);
+}
+
+function toggleFAQItem(si,ii){
+  const item=document.getElementById('faq-item-'+si+'-'+ii);
+  const ans=document.getElementById('faq-a-'+si+'-'+ii);
+  const isOpen=item.classList.contains('open');
+  item.classList.toggle('open',!isOpen);
+  ans.classList.toggle('open',!isOpen);
+}
+
+
+
+// ══════════════════════════════════
+// TAB: API RESOLVE
+// ══════════════════════════════════
+function renderAPI(app){
+  var h='';
+  h+='<div class="alert info"><span>&#8505;</span><span>';
+  h+='Documentacion del mecanismo <strong>API Resolve (IEP)</strong> extraida del boletin CIMPRA 525 (seccion 2.3) y complementada por CIMPRA 530 y 540.';
+  h+='</span></div>';
+
+  // QUE ES
+  h+='<div class="card">';
+  h+='<div class="card-title">Que es el API Resolve?</div>';
+  h+='<p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">';
+  h+='Cuando una billetera escanea un QR con subcampo 99=1, debe consultar al aceptador para obtener los datos completos de la transaccion. ';
+  h+='El <strong style="color:var(--text)">API Resolve (IEP)</strong> es ese mecanismo: la billetera hace un ';
+  h+='<strong style="color:var(--text)">GET</strong> a la URL del aceptador (obtenida de la tabla de resolucion usando el dominio invertido del subcampo 00), ';
+  h+='enviando el <strong style="color:var(--text)">access_token</strong> (que identifica a la billetera) y el ';
+  h+='<strong style="color:var(--text)">data</strong> (el string crudo del QR) como query params.';
+  h+='</p>';
+  h+='<p style="font-size:12px;color:var(--muted);line-height:1.7">';
+  h+='El subcampo <code style="font-family:var(--mono);background:#0d1625;padding:1px 5px;border-radius:3px;color:var(--accent2)">99</code> del template indica si el aceptador usa IEP: ';
+  h+='<code style="font-family:var(--mono);background:#0d1625;padding:1px 5px;border-radius:3px;color:var(--accent2)">1</code> = usa API resolve (GET a la IEP), ';
+  h+='<code style="font-family:var(--mono);background:#0d1625;padding:1px 5px;border-radius:3px;color:var(--accent2)">0</code> = no usa (QR autosuficiente, ir directo a obtener planes).';
+  h+='</p></div>';
+
+  // FLUJO
+  h+='<div class="card"><div class="card-title">Flujo de resolucion (CIMPRA 525)</div>';
+  var pasos=[
+    ['1','Escaneo del QR','La billetera lee el QR y extrae el dominio invertido del subcampo 00 (ej: ar.com.modo). Verifica subcampo 99: si es 1 usa IEP, si es 0 va directo a planes.'],
+    ['2','Lookup en tabla de resolucion','La billetera busca el dominio invertido en su tabla local (refreshed minimo 1 vez al dia). Obtiene la URL base de la API del aceptador.'],
+    ['3','GET /resolve','La billetera llama a la URL con access_token y data (el QR string completo). La respuesta trae estado, datos del colector y metodos de pago permitidos.'],
+    ['4','Confirmacion del pagador','La billetera muestra los datos al pagador: nombre comercio, monto (si es closed_amount), metodos de pago. El pagador confirma.'],
+    ['5','Obtencion de planes y pago','Si acepta tarjeta: PATCH /orders/{order_id}/plans. Luego POST /orders/{order_id}/payments con la intencion de pago.'],
+  ];
+  for(var i=0;i<pasos.length;i++){
+    h+='<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">';
+    h+='<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">'+pasos[i][0]+'</div>';
+    h+='<div style="flex:1;padding-top:4px"><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">'+pasos[i][1]+'</div>';
+    h+='<div style="font-size:11px;color:var(--muted);line-height:1.6">'+pasos[i][2]+'</div></div></div>';
+  }
+  h+='</div>';
+
+  // ENDPOINT GET /resolve
+  h+='<div class="card"><div class="card-title">&#128268; GET /resolve (CIMPRA 525, seccion 2.3)</div>';
+  h+='<div class="alert warn"><span>&#9888;&#65039;</span><span>El BCRA no publica un contrato OpenAPI oficial publico. Esta definicion esta extraida del boletin CIMPRA 525 seccion 2.3 y del swagger referenciado en CIMPRA 540.</span></div>';
+
+  h+='<div style="margin-bottom:14px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:8px">';
+  h+='<span style="background:#3b82f622;border:1px solid #3b82f633;padding:2px 8px;border-radius:4px;font-family:var(--mono)">GET</span>Endpoint</div>';
+
+  h+='<div style="background:#0d1625;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--accent);word-break:break-all;margin-bottom:6px">';
+  h+='/resolve?access_token={access_token}&amp;data={qr_string_completo}';
+  h+='</div>';
+  h+='<p style="font-size:11px;color:var(--muted);margin-bottom:12px">La URL base se obtiene de la tabla de resolucion. El <code style="font-family:var(--mono);color:var(--accent2)">data</code> es el string EMV raw concatenado como query param. El <code style="font-family:var(--mono);color:var(--accent2)">access_token</code> identifica a la billetera ante el aceptador.</p>';
+
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px">Query params</div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px">';
+  h+='<thead><tr style="background:#0d1625">';
+  h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Parametro</th>';
+  h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Requerido</th>';
+  h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Descripcion</th>';
+  h+='</tr></thead><tbody>';
+  var reqParams=[
+    ['access_token','<span class="pill req">SI</span>','Token de identificacion entre la billetera y el aceptador. Identifica quien realiza la lectura del QR.'],
+    ['data','<span class="pill req">SI</span>','El string EMV completo (raw) tal como se obtuvo del escaneo del QR. Se concatena a la URL.'],
+    ['elapsed_time','<span class="pill opt">NO</span>','Tiempo en milisegundos desde que se escaneo el QR por primera vez.'],
+    ['attempt','<span class="pill opt">NO</span>','Cantidad de reintentos de resolver el pago.'],
+  ];
+  for(var i=0;i<reqParams.length;i++){
+    h+='<tr style="border-bottom:1px solid var(--border)">';
+    h+='<td style="padding:7px 8px;font-family:var(--mono);color:var(--accent)">'+reqParams[i][0]+'</td>';
+    h+='<td style="padding:7px 8px">'+reqParams[i][1]+'</td>';
+    h+='<td style="padding:7px 8px;color:var(--muted)">'+reqParams[i][2]+'</td></tr>';
+  }
+  h+='</tbody></table>';
+
+  h+='<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:5px">Ejemplo de request</div>';
+  h+='<div style="background:#0d1625;border:1px solid var(--border);border-radius:8px;padding:11px;font-family:var(--mono);font-size:10px;color:var(--accent2);word-break:break-all;margin-bottom:4px">';
+  h+='GET https://api.modo.com.ar/resolve?access_token=5vd2pj0l0ki2hp25qcamorq1j8&amp;data=000201010212413500...6304XXXX';
+  h+='</div>';
+  h+='<p style="font-size:10px;color:var(--muted)">La URL base viene de la tabla de resolucion usando la clave <code style="font-family:var(--mono);color:var(--accent2)">ar.com.modo</code> (dominio invertido del subcampo 00 del template 26-49)</p>';
+  h+='</div>';
+
+  // RESPONSE
+  h+='<div style="margin-bottom:10px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:8px">';
+  h+='<span style="background:#22c55e22;border:1px solid #22c55e33;padding:2px 8px;border-radius:4px;font-family:var(--mono)">200</span>Response body — monto abierto (CIMPRA 540, seccion 2.1.1)</div>';
+  h+='<div style="background:#0d1625;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:10px;color:var(--accent2);line-height:1.9;overflow-x:auto;max-width:100%">';
+  h+='{<br>';
+  h+='&nbsp;&nbsp;<span style="color:var(--accent)">"status"</span>: <span style="color:#a78bfa">"open_amount"</span>, <span style="color:var(--muted)">// open_amount | closed_amount</span><br>';
+  h+='&nbsp;&nbsp;<span style="color:var(--accent)">"administrator"</span>: {<br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"identification_number"</span>: <span style="color:#a78bfa">"string"</span>, <span style="color:var(--muted)">// CUIT del administrador (subcampo 98)</span><br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"name"</span>: <span style="color:#a78bfa">"string"</span><br>';
+  h+='&nbsp;&nbsp;},<br>';
+  h+='&nbsp;&nbsp;<span style="color:var(--accent)">"collector"</span>: {<br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"account"</span>: <span style="color:#a78bfa">"string"</span>, <span style="color:var(--muted)">// CVU/CBU 22 digitos</span><br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"identification_number"</span>: <span style="color:#a78bfa">"string"</span>, <span style="color:var(--muted)">// CUIT aceptador</span><br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"mcc"</span>: <span style="color:#a78bfa">"string"</span>, <span style="color:var(--muted)">// campo 52 del QR</span><br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"name"</span>: <span style="color:#a78bfa">"string"</span>, <span style="color:var(--muted)">// campo 59 del QR</span><br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"postal_code"</span>: <span style="color:#a78bfa">"C1064AAD"</span> <span style="color:var(--muted)">// campo 61 del QR</span><br>';
+  h+='&nbsp;&nbsp;},<br>';
+  h+='&nbsp;&nbsp;<span style="color:var(--accent)">"order"</span>: {<br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"id"</span>: <span style="color:#a78bfa">"string"</span>, <span style="color:var(--muted)">// = campo 62.05 del QR (qr_id)</span><br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"items"</span>: { <span style="color:var(--accent)">"title"</span>: <span style="color:#a78bfa">"string"</span>, <span style="color:var(--accent)">"quantity"</span>: <span style="color:#fbbf24">1</span>, <span style="color:var(--accent)">"unit_price"</span>: <span style="color:#fbbf24">10000.99</span>, <span style="color:var(--accent)">"currency_id"</span>: <span style="color:#a78bfa">"ARS"</span> },<br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent)">"total_amount"</span>: <span style="color:#fbbf24">10000.99</span><br>';
+  h+='&nbsp;&nbsp;},<br>';
+  h+='&nbsp;&nbsp;<span style="color:var(--accent)">"payment_methods_allowed"</span>: [ <span style="color:var(--muted)">// metodos habilitados por el aceptador</span><br>';
+  h+='&nbsp;&nbsp;&nbsp;&nbsp;{ <span style="color:var(--accent)">"id"</span>: <span style="color:#a78bfa">"CARD"</span>, <span style="color:var(--accent)">"restrictions"</span>: { <span style="color:var(--accent)">"max_bins_allowed"</span>: <span style="color:#a78bfa">"1235678"</span> } }<br>';
+  h+='&nbsp;&nbsp;],<br>';
+  h+='&nbsp;&nbsp;<span style="color:var(--accent)">"additional_info"</span>: {}<br>';
+  h+='}';
+  h+='</div></div>';
+
+  // Tabla campos response
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;margin-top:14px">Campos del response &#8212; referencia con el QR</div>';
+  var rg=[
+    {p:'status',o:'',d:'<code style="font-family:var(--mono)">open_amount</code> o <code style="font-family:var(--mono)">closed_amount</code>',ch:[]},
+    {p:'administrator',o:'',d:'Datos del administrador del esquema',ch:[
+      {f:'identification_number',o:'Subcampo 98',d:'CUIT del administrador, 11 digitos'},
+      {f:'name',o:'',d:'Nombre del administrador'},
+    ]},
+    {p:'collector',o:'',d:'Datos del aceptador (comercio)',ch:[
+      {f:'account',o:'Template 51/IEP',d:'CVU/CBU, 22 digitos'},
+      {f:'identification_number',o:'',d:'CUIT del aceptador'},
+      {f:'mcc',o:'Campo 52',d:'MCC 4 digitos'},
+      {f:'name',o:'Campo 59',d:'Nombre del comercio, max 25 chars'},
+      {f:'postal_code',o:'Campo 61',d:'Codigo postal, 8 chars alfanum'},
+    ]},
+    {p:'order',o:'',d:'Datos de la orden',ch:[
+      {f:'id',o:'Campo 62.05',d:'ID de la transaccion = qr_id. Clave para trazabilidad y devoluciones'},
+      {f:'items',o:'',d:'Array: title, quantity, unit_price, currency_id'},
+      {f:'total_amount',o:'Campo 54',d:'Monto total. Solo si closed_amount'},
+    ]},
+    {p:'payment_methods_allowed',o:'Subcampos 96/97',d:'Array de metodos habilitados: PCT, CARD',ch:[]},
+    {p:'additional_info',o:'',d:'Objeto libre definido por el aceptador',ch:[]},
+  ];
+  h+='<div style="background:#0d1625;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px">';
+  for(var gi=0;gi<rg.length;gi++){
+    var g=rg[gi];
+    h+='<div style="border-bottom:1px solid var(--border)">';
+    h+='<div style="padding:9px 12px;background:#0a1220">';
+    h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">';
+    h+='<span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent)">'+g.p+'</span>';
+    if(g.o) h+='<span style="font-size:10px;color:var(--warn);font-family:var(--mono);background:#f59e0b15;padding:1px 6px;border-radius:3px">'+g.o+'</span>';
+    h+='</div>';
+    h+='<span style="font-size:11px;color:var(--muted)">'+g.d+'</span></div>';
+    for(var ci=0;ci<g.ch.length;ci++){
+      var ch=g.ch[ci];
+      h+='<div style="padding:7px 12px 7px 24px;border-top:1px solid var(--border)">';
+      h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">';
+      h+='<span style="color:var(--muted);font-size:12px">&#8627;</span>';
+      h+='<span style="font-family:var(--mono);font-size:11px;color:var(--accent2)">'+ch.f+'</span>';
+      if(ch.o) h+='<span style="font-size:10px;color:var(--warn);font-family:var(--mono);background:#f59e0b15;padding:1px 6px;border-radius:3px">'+ch.o+'</span>';
+      h+='</div>';
+      h+='<span style="font-size:11px;color:var(--muted)">'+ch.d+'</span></div>';
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+
+  // ESTADOS
+  h+='<div class="card"><div class="card-title">Estados del QR — campo status (CIMPRA 525/530/540)</div>';
+  var estados=[
+    ['open_amount','var(--accent)','Monto abierto: el QR no incluye monto. La billetera pregunta cuanto pagar.'],
+    ['closed_amount','var(--accent2)','Monto cerrado: el QR ya tiene el monto definido (campo 54). La billetera lo muestra sin preguntar.'],
+  ];
+  for(var i=0;i<estados.length;i++){
+    h+='<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 12px;background:#0d1625;border-radius:8px;border:1px solid var(--border);margin-bottom:6px">';
+    h+='<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:'+estados[i][1]+';width:110px;flex-shrink:0;padding-top:1px">'+estados[i][0]+'</span>';
+    h+='<span style="font-size:12px;color:var(--muted);line-height:1.5">'+estados[i][2]+'</span></div>';
+  }
+  h+='<div class="alert warn" style="margin-top:8px"><span>&#9888;&#65039;</span><span>Solo existen estos dos valores para el campo <code style="font-family:var(--mono)">status</code> en el GET /resolve (CIMPRA 525/540). Estados como "pending", "closed", "expired" corresponden al ciclo de vida del pago en otras APIs.</span></div>';
+  h+='</div>';
+
+  // TAMANIOS DE CAMPOS (del EMV spec y CIMPRA)
+  h+='<div class="card"><div class="card-title">&#128207; Limites de tamaño de campos relevantes</div>';
+  h+='<div class="alert info" style="margin-bottom:12px"><span>&#8505;</span><span>Extraidos del EMV QRCPS v1.0 (Tabla 3.6) y los boletines CIMPRA. Aplican tanto para construir el QR como para interpretar la respuesta del /resolve.</span></div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h+='<thead><tr style="background:#0d1625">';
+  h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Campo / ID QR</th>';
+  h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Max chars</th>';
+  h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Formato</th>';
+  h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Fuente</th>';
+  h+='</tr></thead><tbody>';
+  var sizes=[
+    ['Payload total','512','alfanum','EMV spec §4.1'],
+    ['00 — Payload Format Indicator','2','N, fijo "01"','EMV'],
+    ['01 — Point of Initiation','2','N, "11" o "12"','EMV'],
+    ['26-49.00 — GUID/dominio','32','ans','EMV'],
+    ['26-49.98 — CUIT admin','11','N, sin separadores','CIMPRA 530'],
+    ['26-49.99 — API resolve flag','1','N, "0" o "1"','CIMPRA 530'],
+    ['52 — MCC','4','N, fijo','EMV'],
+    ['53 — Currency','3','N, "032"=ARS','EMV'],
+    ['54 — Amount','13','ans, punto decimal','EMV'],
+    ['58 — Country Code','2','ans, "AR"','EMV'],
+    ['59 — Merchant Name','25','ans','EMV'],
+    ['60 — Merchant City','15','ans','EMV'],
+    ['61 — Postal Code','8','alfanum (CIMPRA: exactamente 8)','CIMPRA 530'],
+    ['62.05 — ID del QR (order.id)','25-36','ans / UUID','CIMPRA 530 (norma: 25, práctica: UUID 36 chars)'],
+    ['62.07 — Device POS','25','ans','CIMPRA 530'],
+    ['62.08 — Tipo compra','2','N, "00"=compra','CIMPRA 530'],
+    ['62.10 — CUIT comercio','11','N','CIMPRA 530'],
+  ];
+  for(var i=0;i<sizes.length;i++){
+    h+='<tr style="border-bottom:1px solid var(--border)">';
+    h+='<td style="padding:6px 8px;font-family:var(--mono);color:var(--accent);font-size:10px">'+sizes[i][0]+'</td>';
+    h+='<td style="padding:6px 8px;font-family:var(--mono);color:var(--accent2);text-align:center">'+sizes[i][1]+'</td>';
+    h+='<td style="padding:6px 8px;color:var(--muted)">'+sizes[i][2]+'</td>';
+    h+='<td style="padding:6px 8px;color:var(--muted);font-size:10px">'+sizes[i][3]+'</td></tr>';
+  }
+  h+='</tbody></table></div>';
+
+  // SIN IEP
+  h+='<div class="card"><div class="card-title">QR sin API resolve — subcampo 99 = "0" (CIMPRA 525/530)</div>';
+  h+='<p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">';
+  h+='Cuando el subcampo 99 es <code style="font-family:var(--mono);color:var(--accent2)">0</code>, la billetera no hace el GET /resolve. ';
+  h+='Toma los datos directamente del QR (monto del campo 54, order_id del campo 62.05, moneda del campo 53) y va directo a obtener planes de pago con PATCH /orders/{order_id}/plans. ';
+  h+='El CVU/CBU debe estar embebido en el <strong style="color:var(--text)">template 51</strong>.';
+  h+='</p>';
+  h+='<div style="background:#0d1625;border:1px solid var(--border);border-radius:8px;padding:11px;font-family:var(--mono);font-size:10px;color:var(--accent);word-break:break-all;line-height:1.9">';
+  h+='<span style="color:var(--muted)">// Template sin IEP (subcampo 99=00)</span><br>';
+  h+='<span style="color:var(--warn)">43</span>16<span style="color:var(--accent2)">00</span>10<span style="color:#a78bfa">com.fiserv</span><span style="color:var(--accent2)">99</span>0200<br>';
+  h+='<span style="color:var(--muted)">// CVU embebido en template 51</span><br>';
+  h+='<span style="color:var(--warn)">51</span>26<span style="color:var(--accent2)">00</span>22<span style="color:#a78bfa">0000068000000002222956</span><br>';
+  h+='<span style="color:var(--muted)">// La billetera usa directamente los campos del QR:</span><br>';
+  h+='<span style="color:var(--muted)">// order_id = 62.05, amount = 54, currency = 53</span>';
+  h+='</div></div>';
+
+  app.innerHTML=h;
+}
+
+
+// ── INIT ──
+showTab('wizard',document.querySelector('.tab-btn'));
+</script>
+</body>
+</html>
