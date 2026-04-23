@@ -1245,6 +1245,143 @@ function renderCRC(app){
     </div>
   </div>`;
 }
+function doDecodeManual(){
+  const raw=(document.getElementById('decode-input').value||'').trim();
+  if(raw) renderDecodeResult(raw);
+}
+
+// Descripciones completas incluyendo CIMPRA
+const FDESC={
+  '00':'Payload Format Indicator – siempre "01".',
+  '01':'Point of Initiation – "11"=estático, "12"=dinámico.',
+  '26':'Merchant Account Template (CIMPRA 525/530: dominio invertido en subcampo 00).',
+  '27':'Merchant Account Template ID 27.',
+  '28':'Merchant Account Template ID 28.',
+  '29':'Merchant Account Template ID 29.',
+  '41':'Merchant Account Template ID 41 (ejemplo CIMPRA 525).',
+  '43':'Merchant Account Template ID 43 (ejemplo CIMPRA 530/535).',
+  '50':'Template ID 50 – CUIT del aceptador (según CIMPRA 525).',
+  '51':'Template ID 51 – CVU/CBU del aceptador (según CIMPRA 525).',
+  '52':'Merchant Category Code – tabla VISA/AFIP (CIMPRA 530).',
+  '53':'Transaction Currency – ISO 4217. 032=ARS.',
+  '54':'Transaction Amount.',
+  '55':'Tip or Convenience Indicator.',
+  '56':'Convenience Fee Fixed.',
+  '57':'Convenience Fee Percentage.',
+  '58':'Country Code – "AR".',
+  '59':'Merchant Name (máx. 25 chars).',
+  '60':'Merchant City (máx. 15 chars).',
+  '61':'Postal Code – alfanumérico 8 chars (CIMPRA 530, obligatorio en QR dinámico).',
+  '62':'Additional Data Field Template (CIMPRA 530: 03=POS, 05=ID QR, 07=device, 08=tipo compra).',
+  '63':'CRC – CRC16-CCITT. Siempre el último campo.',
+  '64':'Merchant Info – Language Template.',
+  '80':'Unreserved Template 80 (CIMPRA 535: datos aceptador sin IEP).',
+  '82':'Unreserved Template 82 (CIMPRA 535: firma criptográfica).',
+  '83':'Unreserved Template 83 (CIMPRA 535: token).',
+};
+// Sub-campos con anotaciones CIMPRA
+const SDESC={
+  '00':'GUID / Dominio invertido del aceptador (CIMPRA 525)',
+  '01':'Sub-campo 01 – Brands de tarjeta 8 posiciones (CIMPRA 535): 1=Visa C, 2=Visa D, 3=MC, 4=MC D, 5=Maestro, 6=Cabal, 7=Amex, 8=Naranja',
+  '02':'Sub-campo 02 / Mobile Number (en 62)',
+  '03':'Store Label / Point of Sale (CIMPRA 530)',
+  '04':'Loyalty Number (en 62)',
+  '05':'Reference Label / ID del QR (CIMPRA 530)',
+  '06':'Customer Label (en 62)',
+  '07':'Terminal Label / Device POS (CIMPRA 530)',
+  '08':'Purpose of Transaction – 00=compra (CIMPRA 530)',
+  '09':'Additional Consumer Data Request',
+  '10':'ID operación / CUIT comercio (CIMPRA 530)',
+  '11':'Sucursal (CIMPRA 530)',
+  '96':'PAYMENT_METHODS_ALLOWED (CIMPRA 540): 1er dígito=PCT, 2do=Tarjeta. 11=ambos, 10=solo PCT, 01=solo tarjeta',
+  '97':'MAX_BINS_ALLOWED (CIMPRA 540): 01=1 bin (usuario elige), 02-99=N bines',
+  '98':'CUIT del Administrador del esquema – 11 dígitos (CIMPRA 530)',
+  '99':'Usa API resolve – 0=no, 1=sí (CIMPRA 530)',
+};
+
+const TEMPLATE_IDS=new Set([...[...Array(24)].map((_,i)=>String(i+26).padStart(2,'0')),'50','51','62','64',...[...Array(20)].map((_,i)=>String(i+80).padStart(2,'0'))]);
+
+function parseTLV(s,desc,depth=0){
+  const out=[];let i=0;
+  while(i<s.length-3){
+    const id=s.substr(i,2),len=parseInt(s.substr(i+2,2),10);
+    if(isNaN(len)||i+4+len>s.length) break;
+    const val=s.substr(i+4,len);
+    const item={id,len:String(len).padStart(2,'0'),val,desc:desc[id]||''};
+    if(depth===0&&TEMPLATE_IDS.has(id)) item.children=parseTLV(val,SDESC,1);
+    out.push(item);i+=4+len;
+  }
+  return out;
+}
+
+function renderDecodeResult(raw){
+  const out=document.getElementById('decode-result');
+  const rows=parseTLV(raw,FDESC);
+  if(!rows.length){out.innerHTML='<div class="card"><p style="color:var(--err)">No se pudo decodificar. Verificá que sea un string EMV válido.</p></div>';return}
+
+  // Detectar características CIMPRA
+  const hints=[];
+  const hasDyn=rows.find(r=>r.id==='01'&&r.val==='12');
+  if(hasDyn) hints.push('QR Dinámico (01=12)');
+  const mtTemplates=rows.filter(r=>TEMPLATE_IDS.has(r.id)&&parseInt(r.id)>=26&&parseInt(r.id)<=49);
+  if(mtTemplates.length){
+    for(const t of mtTemplates){
+      const sub98=t.children&&t.children.find(c=>c.id==='98');
+      const sub99=t.children&&t.children.find(c=>c.id==='99');
+      if(sub99) hints.push(`Template ${t.id}: API resolve=${sub99.val==='1'?'SÍ':'NO'} (CIMPRA 530)`);
+      if(sub98) hints.push(`Template ${t.id}: Admin CUIT=${sub98.val} (CIMPRA 530)`);
+    }
+  }
+
+  let html=`${hints.length?`<div class="alert ok"><span>🔎</span><span>${hints.join(' · ')}</span></div>`:''}
+  <div class="card"><div class="card-title">📋 Campos decodificados</div>
+    <div style="display:grid;grid-template-columns:42px 34px 1fr;gap:4px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:10px;color:var(--muted);font-weight:600">ID</span>
+      <span style="font-size:10px;color:var(--muted);font-weight:600">LEN</span>
+      <span style="font-size:10px;color:var(--muted);font-weight:600">VALOR</span>
+    </div>`;
+
+  for(const r of rows){
+    html+=`<div class="tlv-row"><span class="tlv-id">${r.id}</span><span class="tlv-len">${r.len}</span><span class="tlv-val">${esc(r.val)}</span>${r.desc?`<span class="tlv-desc">↳ ${esc(r.desc)}</span>`:''}</div>`;
+    if(r.children) for(const c of r.children){
+      // Interpretar brands si es subcampo 01 de template 26-49
+      let brandNote='';
+      if(c.id==='01'&&c.val.length===8){
+        const active=BRANDS.filter((_,bi)=>c.val[bi]==='1');
+        if(active.length) brandNote=`<span class="tlv-cimpra">Brands: ${active.join(', ')}</span>`;
+      }
+      html+=`<div class="tlv-row tlv-child"><span class="tlv-id" style="color:var(--accent2)">${c.id}</span><span class="tlv-len">${c.len}</span><span class="tlv-val">${esc(c.val)}</span>${c.desc?`<span class="tlv-desc">↳ ${esc(c.desc)}</span>`:''}${brandNote}</div>`;
+    }
+  }
+  html+='</div>';
+
+  if(raw.length>=4){
+    const body=raw.slice(0,-4),decl=raw.slice(-4).toUpperCase(),calc=crc16(body),ok=calc===decl;
+    html+=`<div class="card" style="margin-top:10px"><div class="card-title">🔐 Verificación CRC</div>
+      <p style="font-size:12px">Declarado: <strong style="font-family:var(--mono);color:var(--accent)">${decl}</strong> &nbsp;·&nbsp; Calculado: <strong style="font-family:var(--mono);color:var(--accent)">${calc}</strong></p>
+      <p style="margin-top:8px;font-size:13px;color:${ok?'var(--accent)':'var(--err)'}">${ok?'✅ CRC válido':'❌ CRC inválido'}</p>
+    </div>`;
+  }
+  out.innerHTML=html;
+  out.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── SCANNER ──
+async function toggleScanner(){const w=document.getElementById('scanner-wrapper');if(w&&w.style.display==='block'){stopScanner();return}await startScanner()}
+async function startScanner(){
+  const w=document.getElementById('scanner-wrapper'),v=document.getElementById('scanner-video');
+  const btn=document.getElementById('scan-toggle-btn'),sb=document.getElementById('stop-scan-btn'),st=document.getElementById('scan-status');
+  if(!w)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){st.textContent='❌ Browser sin soporte de cámara.';return}
+  st.textContent='Solicitando acceso…';
+  const tries=[{video:{facingMode:{exact:'environment'}}},{video:{facingMode:'environment'}},{video:true}];
+  let err=null;
+  for(const c of tries){try{scanStream=await navigator.mediaDevices.getUserMedia(c);break}catch(e){err=e;scanStream=null}}
+  if(!scanStream){const n=err?.name||'';st.innerHTML=(n==='NotAllowedError'||n==='PermissionDeniedError')?`<strong>Permiso denegado.</strong><br>Chrome: 🔒 → Cámara → Permitir → recargar. Safari: Ajustes → Safari → Cámara → Permitir.`:'❌ '+(err?.message||'No se pudo acceder.');return}
+  v.srcObject=scanStream;await v.play();
+  w.style.display='block';sb.style.display='block';btn.innerHTML='<span>📷</span> Cámara activa';st.textContent='Apuntá al QR…';scanLoop();
+}
+
 function doCalcCRC(){
   const v=(document.getElementById('crc-input').value||'').trim();if(!v)return;
   document.getElementById('crc-value').textContent=crc16(v);
