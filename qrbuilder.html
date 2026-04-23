@@ -1055,9 +1055,11 @@ function doBuild(){
 // ══════════════════════════════════
 function renderDecode(app){
   var hasBD = !!(window.BarcodeDetector);
+  // Android Chrome: BarcodeDetector disponible → cámara en tiempo real
+  // iOS/Safari/otros: no mostrar botón, el campo de texto es suficiente
   var scanBtn = hasBD
     ? '<button class="scan-btn" id="scan-toggle-btn" onclick="toggleScanner()"><span>\uD83D\uDCF7</span> Escanear con c\u00E1mara</button>'
-    : '<button class="scan-btn" id="scan-toggle-btn" onclick="document.getElementById(\'ios-cam-input\').click()"><span>\uD83D\uDCF7</span> Escanear con c\u00E1mara</button><input type="file" id="ios-cam-input" accept="image/*" capture="environment" style="display:none" onchange="scanFromPhoto(this)">';
+    : '';
 
   var h = '';
   h += '<div class="card">';
