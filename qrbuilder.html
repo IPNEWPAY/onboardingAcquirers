@@ -1095,6 +1095,116 @@ function renderDecode(app){
 }
 
 
+
+
+function toggleScanner(){
+  if(scanStream){ stopScanner(); }
+  else { startScanner(); }
+}
+
+async function startScanner(){
+  var w=document.getElementById('scanner-wrapper');
+  var v=document.getElementById('scanner-video');
+  var btn=document.getElementById('scan-toggle-btn');
+  var sb=document.getElementById('stop-scan-btn');
+  var st=document.getElementById('scan-status');
+  if(!w) return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    if(st) st.textContent='Sin soporte de camara en este browser.'; return;
+  }
+  if(st) st.textContent='Solicitando acceso...';
+  var tries=[
+    {video:{facingMode:{exact:'environment'},width:{ideal:1280},height:{ideal:720}}},
+    {video:{facingMode:'environment'}},
+    {video:true}
+  ];
+  var err=null;
+  for(var i=0;i<tries.length;i++){
+    try{ scanStream=await navigator.mediaDevices.getUserMedia(tries[i]); break; }
+    catch(e){ err=e; scanStream=null; }
+  }
+  if(!scanStream){
+    var n=err?err.name:'';
+    if(st) st.innerHTML=(n==='NotAllowedError'||n==='PermissionDeniedError')
+      ?'<strong>Permiso denegado.</strong> Toca el candado en la barra y permite la camara.'
+      :'No se pudo acceder a la camara.';
+    return;
+  }
+  v.srcObject=scanStream;
+  w.style.display='block';
+  if(sb) sb.style.display='block';
+  if(btn) btn.innerHTML='<span>\uD83D\uDCF7</span> Camara activa';
+  if(st) st.textContent='Iniciando...';
+  try{ await v.play(); }catch(e){ if(st) st.textContent='Error: '+e.message; return; }
+  // Esperar primer frame
+  await new Promise(function(resolve){
+    if(v.readyState>=2){ resolve(); return; }
+    v.addEventListener('canplay',resolve,{once:true});
+    setTimeout(resolve,2000);
+  });
+  if(st) st.textContent='Apunta al QR...';
+  _scanActive=true;
+  scanLoop();
+}
+
+if(window.BarcodeDetector){
+  window.BarcodeDetector.getSupportedFormats().then(function(fmts){
+    if(fmts.indexOf('qr_code')>=0){
+      _barcodeDetector=new window.BarcodeDetector({formats:['qr_code']});
+    }
+  }).catch(function(){});
+}
+
+function scanLoop(){
+  var v=document.getElementById('scanner-video');
+  var cv=document.getElementById('scanner-canvas');
+  var st=document.getElementById('scan-status');
+  if(!scanStream||!_scanActive||!v||!cv){ return; }
+
+  if(v.readyState<2||v.videoWidth===0){
+    scanRaf=setTimeout(scanLoop,100); return;
+  }
+
+  function onDetected(data){
+    _scanActive=false;
+    if(scanRaf){ clearTimeout(scanRaf); scanRaf=null; }
+    if(st) st.textContent='\u2705 QR detectado!';
+    stopScanner();
+    var inp=document.getElementById('decode-input');
+    if(inp){ inp.value=data; }
+    renderDecodeResult(data);
+  }
+
+  if(_barcodeDetector){
+    _barcodeDetector.detect(v).then(function(codes){
+      if(!_scanActive) return;
+      if(codes&&codes.length>0&&codes[0].rawValue){
+        onDetected(codes[0].rawValue);
+      } else {
+        scanRaf=setTimeout(scanLoop,80);
+      }
+    }).catch(function(){
+      // fallback jsQR
+      jsqrFrame(onDetected);
+    });
+  } else {
+    jsqrFrame(onDetected);
+  }
+}
+
+function jsqrFrame(onDetected){
+  var v=document.getElementById('scanner-video');
+  var cv=document.getElementById('scanner-canvas');
+  if(!v||!cv||!scanStream||!_scanActive){ return; }
+  cv.width=v.videoWidth; cv.height=v.videoHeight;
+  var ctx=cv.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(v,0,0,cv.width,cv.height);
+  var d=ctx.getImageData(0,0,cv.width,cv.height);
+  var code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
+  if(code&&code.data){ onDetected(code.data); }
+  else { scanRaf=setTimeout(scanLoop,100); }
+}
+
 function stopScanner(){
   if(scanRaf){clearTimeout(scanRaf);cancelAnimationFrame(scanRaf);scanRaf=null}
   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
