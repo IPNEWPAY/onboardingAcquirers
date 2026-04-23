@@ -940,13 +940,13 @@ function doBuild(){
   if(isDyn&&!amount){showBuildErr('QR Dinámico requiere monto (campo 54) — CIMPRA 530');return}
   const postalCode=gv('f61');
   if(isDyn&&!postalCode){showBuildErr('QR Dinámico requiere código postal (campo 61) — CIMPRA 530');return}
+  const validMTs=buildState.merchantTemplates.filter(t=>t.guid&&t.guid.trim());
+  if(!validMTs.length){showBuildErr('Al menos un Merchant Account Template debe tener dominio invertido');return}
+
   // Validar 62.05 si no usa API resolve
   const qrId=gv('f6205');
   const noApiResolve = validMTs.every(t=>t.usaApiResolve==='0');
   if(noApiResolve&&!qrId){showBuildErr('Sin API resolve, el ID del QR (campo 62.05) es obligatorio. La billetera lo usa como order.id.');return}
-
-  const validMTs=buildState.merchantTemplates.filter(t=>t.guid&&t.guid.trim());
-  if(!validMTs.length){showBuildErr('Al menos un Merchant Account Template debe tener dominio invertido');return}
 
   let s = tlv('00','01') + tlv('01',gv('f01'));
 
