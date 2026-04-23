@@ -71,7 +71,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
 .alert.ok{background:#22c55e15;border:1px solid #22c55e30;color:#86efac}
 #scanner-wrapper{display:none;position:relative;width:100%;border-radius:12px;overflow:hidden;margin-bottom:10px;background:#000}
 #scanner-video{width:100%;display:block;border-radius:12px;max-height:260px;object-fit:cover}
-#scanner-canvas{display:none}
+#scanner-canvas{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px}
 .scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .scan-frame{width:170px;height:170px;border:2px solid var(--accent);border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative}
 .scan-line{position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanline 2s ease-in-out infinite;top:10%}
@@ -1169,13 +1169,20 @@ function scanLoop(){
   if(!scanStream||!_scanActive||!v||!cv){ return; }
 
   if(v.readyState<2||v.videoWidth===0){
+    if(st) st.textContent='Iniciando camara...';
     scanRaf=setTimeout(scanLoop,100); return;
   }
+
+  // Capturar frame en canvas — necesario para BarcodeDetector y jsQR
+  cv.width=v.videoWidth; cv.height=v.videoHeight;
+  var ctx=cv.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(v,0,0,cv.width,cv.height);
+  if(st) st.textContent='Apunta al QR... ('+cv.width+'x'+cv.height+')';
 
   function onDetected(data){
     _scanActive=false;
     if(scanRaf){ clearTimeout(scanRaf); scanRaf=null; }
-    if(st) st.textContent='\u2705 QR detectado!';
+    if(st) st.textContent='✅ QR detectado!';
     stopScanner();
     var inp=document.getElementById('decode-input');
     if(inp){ inp.value=data; }
@@ -1183,19 +1190,27 @@ function scanLoop(){
   }
 
   if(_barcodeDetector){
-    _barcodeDetector.detect(v).then(function(codes){
+    // Pasar el canvas (no el video) a BarcodeDetector — más confiable
+    _barcodeDetector.detect(cv).then(function(codes){
       if(!_scanActive) return;
       if(codes&&codes.length>0&&codes[0].rawValue){
         onDetected(codes[0].rawValue);
       } else {
-        scanRaf=setTimeout(scanLoop,80);
+        scanRaf=setTimeout(scanLoop,150);
       }
-    }).catch(function(){
-      // fallback jsQR
-      jsqrFrame(onDetected);
+    }).catch(function(e){
+      console.log('BarcodeDetector error:',e);
+      // fallback jsQR con los datos ya en el canvas
+      var d=ctx.getImageData(0,0,cv.width,cv.height);
+      var code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
+      if(code&&code.data){ onDetected(code.data); }
+      else { scanRaf=setTimeout(scanLoop,150); }
     });
   } else {
-    jsqrFrame(onDetected);
+    var d=ctx.getImageData(0,0,cv.width,cv.height);
+    var code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
+    if(code&&code.data){ onDetected(code.data); }
+    else { scanRaf=setTimeout(scanLoop,150); }
   }
 }
 
