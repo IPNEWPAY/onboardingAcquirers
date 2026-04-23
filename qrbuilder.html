@@ -240,7 +240,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
 <body>
 <header>
   <div>
-    <span class="logo-badge">NEWPAY · PCT v1.0</span>
+    <span class="logo-badge">NEWPAY · PCT v0.15</span>
     <span class="logo-badge2">CIMPRA 525/530/535/540</span>
   </div>
   <h1>QR Builder<br><span>Transferencias 3.0</span></h1>
@@ -1163,54 +1163,57 @@ if(window.BarcodeDetector){
 }
 
 function scanLoop(){
-  var v=document.getElementById('scanner-video');
-  var cv=document.getElementById('scanner-canvas');
-  var st=document.getElementById('scan-status');
-  if(!scanStream||!_scanActive||!v||!cv){ return; }
+  var v  = document.getElementById('scanner-video');
+  var cv = document.getElementById('scanner-canvas');
+  var st = document.getElementById('scan-status');
+  if(!scanStream || !_scanActive || !v || !cv) return;
 
-  if(v.readyState<2||v.videoWidth===0){
-    if(st) st.textContent='Iniciando camara...';
-    scanRaf=setTimeout(scanLoop,100); return;
+  if(v.readyState < 2 || v.videoWidth === 0){
+    scanRaf = setTimeout(scanLoop, 100); return;
   }
 
-  // Capturar frame en canvas — necesario para BarcodeDetector y jsQR
-  cv.width=v.videoWidth; cv.height=v.videoHeight;
-  var ctx=cv.getContext('2d',{willReadFrequently:true});
-  ctx.drawImage(v,0,0,cv.width,cv.height);
-  if(st) st.textContent='Apunta al QR... ('+cv.width+'x'+cv.height+')';
+  // Dibujar frame en canvas
+  cv.width  = v.videoWidth;
+  cv.height = v.videoHeight;
+  var ctx = cv.getContext('2d', {willReadFrequently:true});
+  ctx.drawImage(v, 0, 0);
+  if(st) st.textContent = 'Escaneando... ' + cv.width + 'x' + cv.height;
 
   function onDetected(data){
-    _scanActive=false;
-    if(scanRaf){ clearTimeout(scanRaf); scanRaf=null; }
-    if(st) st.textContent='✅ QR detectado!';
+    _scanActive = false;
+    if(scanRaf){ clearTimeout(scanRaf); scanRaf = null; }
+    if(st) st.textContent = '✅ QR detectado!';
     stopScanner();
-    var inp=document.getElementById('decode-input');
-    if(inp){ inp.value=data; }
+    var inp = document.getElementById('decode-input');
+    if(inp) inp.value = data;
     renderDecodeResult(data);
   }
 
+  function tryJsQR(){
+    try{
+      var d = ctx.getImageData(0, 0, cv.width, cv.height);
+      var code = jsQR(d.data, d.width, d.height, {inversionAttempts:'attemptBoth'});
+      if(code && code.data){ onDetected(code.data); return; }
+    }catch(e){}
+    scanRaf = setTimeout(scanLoop, 200);
+  }
+
   if(_barcodeDetector){
-    // Pasar el canvas (no el video) a BarcodeDetector — más confiable
-    _barcodeDetector.detect(cv).then(function(codes){
-      if(!_scanActive) return;
-      if(codes&&codes.length>0&&codes[0].rawValue){
-        onDetected(codes[0].rawValue);
-      } else {
-        scanRaf=setTimeout(scanLoop,150);
-      }
-    }).catch(function(e){
-      console.log('BarcodeDetector error:',e);
-      // fallback jsQR con los datos ya en el canvas
-      var d=ctx.getImageData(0,0,cv.width,cv.height);
-      var code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
-      if(code&&code.data){ onDetected(code.data); }
-      else { scanRaf=setTimeout(scanLoop,150); }
-    });
+    // Intentar con ImageBitmap — más compatible que canvas/video directo
+    createImageBitmap(cv).then(function(bmp){
+      if(!_scanActive){ bmp.close && bmp.close(); return; }
+      _barcodeDetector.detect(bmp).then(function(codes){
+        bmp.close && bmp.close();
+        if(!_scanActive) return;
+        if(codes && codes.length > 0 && codes[0].rawValue){
+          onDetected(codes[0].rawValue);
+        } else {
+          scanRaf = setTimeout(scanLoop, 150);
+        }
+      }).catch(function(){ bmp.close && bmp.close(); tryJsQR(); });
+    }).catch(function(){ tryJsQR(); });
   } else {
-    var d=ctx.getImageData(0,0,cv.width,cv.height);
-    var code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
-    if(code&&code.data){ onDetected(code.data); }
-    else { scanRaf=setTimeout(scanLoop,150); }
+    tryJsQR();
   }
 }
 
