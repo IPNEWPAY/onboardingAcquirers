@@ -273,6 +273,14 @@ function showTab(name,el){
 }
 
 // ── UTILS ──
+function genUUID(){
+  // UUID v4 usando crypto.randomUUID si está disponible, sino manual
+  if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
+    var r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
 function normalizeEMV(s){
   return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^\x20-\x7E]/g,'?');
 }
@@ -499,40 +507,50 @@ const BRANDS=['Visa crédito','Visa débito','Mastercard','Mastercard debit','Ma
 // Estado reactivo del constructor
 let buildState = {};
 
-const CITY_DATA=[{"c": "BUENOS AIRES", "p": "C1001AAA"}, {"c": "PALERMO", "p": "C1425AAA"}, {"c": "BELGRANO", "p": "C1426AAA"}, {"c": "FLORES", "p": "C1406AAA"}, {"c": "CABALLITO", "p": "C1406AAA"}, {"c": "RECOLETA", "p": "C1113AAA"}, {"c": "SAN TELMO", "p": "C1075AAA"}, {"c": "MICROCENTRO", "p": "C1000AAA"}, {"c": "PUERTO MADERO", "p": "C1107AAA"}, {"c": "VILLA DEL PARQUE", "p": "C1417AAA"}, {"c": "ALMAGRO", "p": "C1196AAA"}, {"c": "BOEDO", "p": "C1218AAA"}, {"c": "CHACARITA", "p": "C1427AAA"}, {"c": "VILLA URQUIZA", "p": "C1431AAA"}, {"c": "MATADEROS", "p": "C1440AAA"}, {"c": "VILLA LUGANO", "p": "C1439AAA"}, {"c": "LINIERS", "p": "C1408AAA"}, {"c": "MONSERRAT", "p": "C1067AAA"}, {"c": "BARRACAS", "p": "C1273AAA"}, {"c": "LA BOCA", "p": "C1155AAA"}, {"c": "NUNEZ", "p": "C1429AAA"}, {"c": "SAAVEDRA", "p": "C1430AAA"}, {"c": "COLEGIALES", "p": "C1426AAA"}, {"c": "PATERNAL", "p": "C1416AAA"}, {"c": "SAN ISIDRO", "p": "B1642AAA"}, {"c": "MARTINEZ", "p": "B1640AAA"}, {"c": "OLIVOS", "p": "B1636AAA"}, {"c": "VICENTE LOPEZ", "p": "B1638AAA"}, {"c": "FLORIDA", "p": "B1602AAA"}, {"c": "MUNRO", "p": "B1605AAA"}, {"c": "TIGRE", "p": "B1648AAA"}, {"c": "SAN FERNANDO", "p": "B1646AAA"}, {"c": "ACASSUSO", "p": "B1641AAA"}, {"c": "BOULOGNE", "p": "B1661AAA"}, {"c": "LA LUCILA", "p": "B1636AAA"}, {"c": "BECCAR", "p": "B1643AAA"}, {"c": "NORDELTA", "p": "B1670AAA"}, {"c": "PILAR", "p": "B1629AAA"}, {"c": "ESCOBAR", "p": "B1625AAA"}, {"c": "GARÍN", "p": "B1619AAA"}, {"c": "GENERAL PACHECO", "p": "B1617AAA"}, {"c": "DON TORCUATO", "p": "B1611AAA"}, {"c": "JOSE LEON SUAREZ", "p": "B1655AAA"}, {"c": "VILLA ADELINA", "p": "B1607AAA"}, {"c": "MORÓN", "p": "B1708AAA"}, {"c": "HAEDO", "p": "B1706AAA"}, {"c": "EL PALOMAR", "p": "B1684AAA"}, {"c": "CASTELAR", "p": "B1712AAA"}, {"c": "ITUZAINGO", "p": "B1714AAA"}, {"c": "RAMOS MEJIA", "p": "B1704AAA"}, {"c": "SAN JUSTO", "p": "B1754AAA"}, {"c": "CIUDADELA", "p": "B1702AAA"}, {"c": "LINIERS GBA", "p": "B1407AAA"}, {"c": "MERLO", "p": "B1722AAA"}, {"c": "MORENO", "p": "B1744AAA"}, {"c": "GENERAL RODRIGUEZ", "p": "B1748AAA"}, {"c": "LUJÁN", "p": "B6700AAA"}, {"c": "MERCEDES", "p": "B6600AAA"}, {"c": "MARCOS PAZ", "p": "B1727AAA"}, {"c": "LOMAS DE ZAMORA", "p": "B1832AAA"}, {"c": "BANFIELD", "p": "B1828AAA"}, {"c": "TEMPERLEY", "p": "B1834AAA"}, {"c": "LANÚS", "p": "B1824AAA"}, {"c": "AVELLANEDA", "p": "B1870AAA"}, {"c": "QUILMES", "p": "B1878AAA"}, {"c": "BERNAL", "p": "B1876AAA"}, {"c": "BERAZATEGUI", "p": "B1884AAA"}, {"c": "FLORENCIO VARELA", "p": "B1888AAA"}, {"c": "ALMIRANTE BROWN", "p": "B1846AAA"}, {"c": "SAN VICENTE", "p": "B1853AAA"}, {"c": "CAÑUELAS", "p": "B1814AAA"}, {"c": "EZEIZA", "p": "B1804AAA"}, {"c": "MONTE GRANDE", "p": "B1842AAA"}, {"c": "LONGCHAMPS", "p": "B1854AAA"}, {"c": "ADROGUÉ", "p": "B1846AAA"}, {"c": "BURZACO", "p": "B1852AAA"}, {"c": "GLEW", "p": "B1856AAA"}, {"c": "SAN MARTÍN", "p": "B1650AAA"}, {"c": "VILLA LYNCH", "p": "B1672AAA"}, {"c": "PALERMO GBA", "p": "B1651AAA"}, {"c": "VILLA BALLESTER", "p": "B1653AAA"}, {"c": "GENERAL SAN MARTIN", "p": "B1650AAA"}, {"c": "TRES DE FEBRERO", "p": "B1678AAA"}, {"c": "JOSE C PAZ", "p": "B1665AAA"}, {"c": "MALVINAS ARGENTINAS", "p": "B1613AAA"}, {"c": "SAN MIGUEL", "p": "B1663AAA"}, {"c": "BELLA VISTA", "p": "B1661AAA"}, {"c": "LA PLATA", "p": "B1900AAA"}, {"c": "BERISSO", "p": "B1923AAA"}, {"c": "ENSENADA", "p": "B1925AAA"}, {"c": "MAR DEL PLATA", "p": "B7600AAA"}, {"c": "BAHÍA BLANCA", "p": "B8000AAA"}, {"c": "TANDIL", "p": "B7000AAA"}, {"c": "NECOCHEA", "p": "B7630AAA"}, {"c": "MIRAMAR", "p": "B7607AAA"}, {"c": "PINAMAR", "p": "B7167AAA"}, {"c": "VILLA GESELL", "p": "B7165AAA"}, {"c": "MONTE HERMOSO", "p": "B8153AAA"}, {"c": "OLAVARRÍA", "p": "B7400AAA"}, {"c": "AZUL", "p": "B7300AAA"}, {"c": "JUNÍN", "p": "B6000AAA"}, {"c": "PERGAMINO", "p": "B2700AAA"}, {"c": "SAN NICOLÁS", "p": "B2900AAA"}, {"c": "RAMALLO", "p": "B2915AAA"}, {"c": "ZÁRATE", "p": "B2820AAA"}, {"c": "CAMPANA", "p": "B2804AAA"}, {"c": "SAN PEDRO", "p": "B2930AAA"}, {"c": "CHIVILCOY", "p": "B6620AAA"}, {"c": "BRAGADO", "p": "B6640AAA"}, {"c": "NUEVE DE JULIO", "p": "B6500AAA"}, {"c": "PEHUAJÓ", "p": "B6450AAA"}, {"c": "TRENQUE LAUQUEN", "p": "B6400AAA"}, {"c": "RIVADAVIA", "p": "B6355AAA"}, {"c": "TRES ARROYOS", "p": "B7500AAA"}, {"c": "CORONEL SUÁREZ", "p": "B7540AAA"}, {"c": "CORONEL PRINGLES", "p": "B7530AAA"}, {"c": "BENITO JUÁREZ", "p": "B7020AAA"}, {"c": "DOLORES", "p": "B7100AAA"}, {"c": "CHASCOMÚS", "p": "B7130AAA"}, {"c": "LOBOS", "p": "B7240AAA"}, {"c": "SAN ANDRÉS DE GILES", "p": "B6720AAA"}, {"c": "EXALTACIÓN DE LA CRUZ", "p": "B2806AAA"}, {"c": "ARRECIFES", "p": "B2740AAA"}, {"c": "SALTO", "p": "B2741AAA"}, {"c": "CÓRDOBA", "p": "X5000AAA"}, {"c": "RÍO CUARTO", "p": "X5800AAA"}, {"c": "SAN FRANCISCO", "p": "X2400AAA"}, {"c": "VILLA MARÍA", "p": "X5900AAA"}, {"c": "ALTA GRACIA", "p": "X5186AAA"}, {"c": "COSQUÍN", "p": "X5166AAA"}, {"c": "LA FALDA", "p": "X5172AAA"}, {"c": "CARLOS PAZ", "p": "X5152AAA"}, {"c": "JESÚS MARÍA", "p": "X5220AAA"}, {"c": "BELL VILLE", "p": "X2720AAA"}, {"c": "MARCOS JUÁREZ", "p": "X2580AAA"}, {"c": "LABOULAYE", "p": "X6120AAA"}, {"c": "RÍO TERCERO", "p": "X5850AAA"}, {"c": "VILLA DOLORES", "p": "X5870AAA"}, {"c": "DEAN FUNES", "p": "X5200AAA"}, {"c": "VILLA CARLOS PAZ", "p": "X5152AAA"}, {"c": "UNQUILLO", "p": "X5109AAA"}, {"c": "LA CALERA", "p": "X5004AAA"}, {"c": "RÍO CEBALLOS", "p": "X5115AAA"}, {"c": "SALSIPUEDES", "p": "X5118AAA"}, {"c": "SANTA FE", "p": "S3000AAA"}, {"c": "ROSARIO", "p": "S2000AAA"}, {"c": "RAFAELA", "p": "S2300AAA"}, {"c": "VENADO TUERTO", "p": "S2600AAA"}, {"c": "RECONQUISTA", "p": "S3560AAA"}, {"c": "RESISTENCIA", "p": "H3500AAA"}, {"c": "SAN LORENZO", "p": "S2200AAA"}, {"c": "CASILDA", "p": "S2170AAA"}, {"c": "CAÑADA DE GÓMEZ", "p": "S2500AAA"}, {"c": "ESPERANZA", "p": "S3080AAA"}, {"c": "SANTO TOMÉ", "p": "S3016AAA"}, {"c": "PARANÁ", "p": "E3100AAA"}, {"c": "VILLAGUAY", "p": "E3240AAA"}, {"c": "GUALEGUAYCHÚ", "p": "E2820AAA"}, {"c": "CONCORDIA", "p": "E3200AAA"}, {"c": "LA PAZ", "p": "E3190AAA"}, {"c": "DIAMANTE", "p": "E3105AAA"}, {"c": "VICTORIA", "p": "E3153AAA"}, {"c": "MENDOZA", "p": "M5500AAA"}, {"c": "GODOY CRUZ", "p": "M5501AAA"}, {"c": "GUAYMALLÉN", "p": "M5521AAA"}, {"c": "LAS HERAS", "p": "M5539AAA"}, {"c": "MAIPÚ", "p": "M5515AAA"}, {"c": "LUJÁN DE CUYO", "p": "M5507AAA"}, {"c": "SAN RAFAEL", "p": "M5600AAA"}, {"c": "GENERAL ALVEAR", "p": "M5620AAA"}, {"c": "MALARGÜE", "p": "M5613AAA"}, {"c": "RIVADAVIA MDZ", "p": "M5574AAA"}, {"c": "JUNÍN MDZ", "p": "M5570AAA"}, {"c": "SAN MARTÍN MDZ", "p": "M5570AAA"}, {"c": "SAN MIGUEL DE TUCUMÁN", "p": "T4000AAA"}, {"c": "YERBA BUENA", "p": "T4107AAA"}, {"c": "TAFÍ VIEJO", "p": "T4103AAA"}, {"c": "BANDA DEL RÍO SALÍ", "p": "T4100AAA"}, {"c": "CONCEPCIÓN", "p": "T4138AAA"}, {"c": "MONTEROS", "p": "T4142AAA"}, {"c": "FAMAILLÁ", "p": "T4132AAA"}, {"c": "SALTA", "p": "A4400AAA"}, {"c": "SAN RAMÓN DE LA NUEVA ORÁN", "p": "A4530AAA"}, {"c": "TARTAGAL", "p": "A4560AAA"}, {"c": "GENERAL GÜEMES", "p": "A4420AAA"}, {"c": "METÁN", "p": "A4440AAA"}, {"c": "ROSARIO DE LA FRONTERA", "p": "A4442AAA"}, {"c": "CAFAYATE", "p": "A4427AAA"}, {"c": "SAN SALVADOR DE JUJUY", "p": "Y4600AAA"}, {"c": "PALPALÁ", "p": "Y4612AAA"}, {"c": "LIBERTADOR GENERAL SAN MARTÍN", "p": "Y4662AAA"}, {"c": "LA QUIACA", "p": "Y4650AAA"}, {"c": "POSADAS", "p": "N3300AAA"}, {"c": "OBERÁ", "p": "N3360AAA"}, {"c": "ELDORADO", "p": "N3380AAA"}, {"c": "PUERTO IGUAZÚ", "p": "N3370AAA"}, {"c": "APÓSTOLES", "p": "N3316AAA"}, {"c": "PRESIDENCIA ROQUE SÁENZ PEÑA", "p": "H3700AAA"}, {"c": "VILLA ÁNGELA", "p": "H3540AAA"}, {"c": "CHARATA", "p": "H3730AAA"}, {"c": "CORRIENTES", "p": "W3400AAA"}, {"c": "GOYA", "p": "W3450AAA"}, {"c": "MERCEDES", "p": "W3470AAA"}, {"c": "CURUZÚ CUATIÁ", "p": "W3460AAA"}, {"c": "SANTO TOMÉ COR", "p": "W3007AAA"}, {"c": "NEUQUÉN", "p": "Q8300AAA"}, {"c": "CIPOLLETTI", "p": "R8324AAA"}, {"c": "CUTRAL CÓ", "p": "Q8322AAA"}, {"c": "PLOTTIER", "p": "Q8316AAA"}, {"c": "ZAPALA", "p": "Q8340AAA"}, {"c": "JUNÍN DE LOS ANDES", "p": "Q8371AAA"}, {"c": "SAN MARTÍN DE LOS ANDES", "p": "Q8370AAA"}, {"c": "VILLA LA ANGOSTURA", "p": "Q8407AAA"}, {"c": "VIEDMA", "p": "R8500AAA"}, {"c": "BARILOCHE", "p": "R8400AAA"}, {"c": "GENERAL ROCA", "p": "R8332AAA"}, {"c": "ALLEN", "p": "R8328AAA"}, {"c": "VILLA REGINA", "p": "R8336AAA"}, {"c": "EL BOLSÓN", "p": "R8430AAA"}, {"c": "RAWSON", "p": "U9103AAA"}, {"c": "COMODORO RIVADAVIA", "p": "U9000AAA"}, {"c": "TRELEW", "p": "U9100AAA"}, {"c": "PUERTO MADRYN", "p": "U9120AAA"}, {"c": "ESQUEL", "p": "U9200AAA"}, {"c": "RÍO GALLEGOS", "p": "Z9400AAA"}, {"c": "CALETA OLIVIA", "p": "Z9011AAA"}, {"c": "EL CALAFATE", "p": "Z9405AAA"}, {"c": "PICO TRUNCADO", "p": "Z9015AAA"}, {"c": "USHUAIA", "p": "V9410AAA"}, {"c": "RÍO GRANDE", "p": "V9420AAA"}, {"c": "SANTA ROSA", "p": "L6300AAA"}, {"c": "GENERAL PICO", "p": "L6360AAA"}, {"c": "TOAY", "p": "L6303AAA"}, {"c": "SAN LUIS", "p": "D5700AAA"}, {"c": "VILLA MERCEDES", "p": "D5730AAA"}, {"c": "MERLO SL", "p": "D5881AAA"}, {"c": "SAN JUAN", "p": "J5400AAA"}, {"c": "RAWSON SJ", "p": "J5409AAA"}, {"c": "RIVADAVIA SJ", "p": "J5413AAA"}, {"c": "CAUCETE", "p": "J5442AAA"}, {"c": "LA RIOJA", "p": "F5300AAA"}, {"c": "CHILECITO", "p": "F5360AAA"}, {"c": "SAN FERNANDO DEL VALLE DE CATAMARCA", "p": "K4700AAA"}, {"c": "TINOGASTA", "p": "K5340AAA"}, {"c": "SANTIAGO DEL ESTERO", "p": "G4200AAA"}, {"c": "LA BANDA", "p": "G4302AAA"}, {"c": "TERMAS DE RÍO HONDO", "p": "G4220AAA"}, {"c": "FRÍAS", "p": "G4230AAA"}, {"c": "FORMOSA", "p": "P3600AAA"}, {"c": "CLORINDA", "p": "P3708AAA"}, {"c": "PIRANÉ", "p": "P3612AAA"}];
+var CITY_DATA=[{"c": "BUENOS AIRES", "p": "C1001AAA"}, {"c": "PALERMO", "p": "C1425AAA"}, {"c": "BELGRANO", "p": "C1426AAA"}, {"c": "FLORES", "p": "C1406AAA"}, {"c": "CABALLITO", "p": "C1406AAA"}, {"c": "RECOLETA", "p": "C1113AAA"}, {"c": "SAN TELMO", "p": "C1075AAA"}, {"c": "MICROCENTRO", "p": "C1000AAA"}, {"c": "PUERTO MADERO", "p": "C1107AAA"}, {"c": "VILLA DEL PARQUE", "p": "C1417AAA"}, {"c": "ALMAGRO", "p": "C1196AAA"}, {"c": "BOEDO", "p": "C1218AAA"}, {"c": "CHACARITA", "p": "C1427AAA"}, {"c": "VILLA URQUIZA", "p": "C1431AAA"}, {"c": "MATADEROS", "p": "C1440AAA"}, {"c": "VILLA LUGANO", "p": "C1439AAA"}, {"c": "LINIERS", "p": "C1408AAA"}, {"c": "MONSERRAT", "p": "C1067AAA"}, {"c": "BARRACAS", "p": "C1273AAA"}, {"c": "LA BOCA", "p": "C1155AAA"}, {"c": "NUNEZ", "p": "C1429AAA"}, {"c": "SAAVEDRA", "p": "C1430AAA"}, {"c": "COLEGIALES", "p": "C1426AAA"}, {"c": "PATERNAL", "p": "C1416AAA"}, {"c": "SAN ISIDRO", "p": "B1642AAA"}, {"c": "MARTINEZ", "p": "B1640AAA"}, {"c": "OLIVOS", "p": "B1636AAA"}, {"c": "VICENTE LOPEZ", "p": "B1638AAA"}, {"c": "FLORIDA", "p": "B1602AAA"}, {"c": "MUNRO", "p": "B1605AAA"}, {"c": "TIGRE", "p": "B1648AAA"}, {"c": "SAN FERNANDO", "p": "B1646AAA"}, {"c": "ACASSUSO", "p": "B1641AAA"}, {"c": "BOULOGNE", "p": "B1661AAA"}, {"c": "LA LUCILA", "p": "B1636AAA"}, {"c": "BECCAR", "p": "B1643AAA"}, {"c": "NORDELTA", "p": "B1670AAA"}, {"c": "PILAR", "p": "B1629AAA"}, {"c": "ESCOBAR", "p": "B1625AAA"}, {"c": "GARÍN", "p": "B1619AAA"}, {"c": "GENERAL PACHECO", "p": "B1617AAA"}, {"c": "DON TORCUATO", "p": "B1611AAA"}, {"c": "JOSE LEON SUAREZ", "p": "B1655AAA"}, {"c": "VILLA ADELINA", "p": "B1607AAA"}, {"c": "MORÓN", "p": "B1708AAA"}, {"c": "HAEDO", "p": "B1706AAA"}, {"c": "EL PALOMAR", "p": "B1684AAA"}, {"c": "CASTELAR", "p": "B1712AAA"}, {"c": "ITUZAINGO", "p": "B1714AAA"}, {"c": "RAMOS MEJIA", "p": "B1704AAA"}, {"c": "SAN JUSTO", "p": "B1754AAA"}, {"c": "CIUDADELA", "p": "B1702AAA"}, {"c": "LINIERS GBA", "p": "B1407AAA"}, {"c": "MERLO", "p": "B1722AAA"}, {"c": "MORENO", "p": "B1744AAA"}, {"c": "GENERAL RODRIGUEZ", "p": "B1748AAA"}, {"c": "LUJÁN", "p": "B6700AAA"}, {"c": "MERCEDES", "p": "B6600AAA"}, {"c": "MARCOS PAZ", "p": "B1727AAA"}, {"c": "LOMAS DE ZAMORA", "p": "B1832AAA"}, {"c": "BANFIELD", "p": "B1828AAA"}, {"c": "TEMPERLEY", "p": "B1834AAA"}, {"c": "LANÚS", "p": "B1824AAA"}, {"c": "AVELLANEDA", "p": "B1870AAA"}, {"c": "QUILMES", "p": "B1878AAA"}, {"c": "BERNAL", "p": "B1876AAA"}, {"c": "BERAZATEGUI", "p": "B1884AAA"}, {"c": "FLORENCIO VARELA", "p": "B1888AAA"}, {"c": "ALMIRANTE BROWN", "p": "B1846AAA"}, {"c": "SAN VICENTE", "p": "B1853AAA"}, {"c": "CAÑUELAS", "p": "B1814AAA"}, {"c": "EZEIZA", "p": "B1804AAA"}, {"c": "MONTE GRANDE", "p": "B1842AAA"}, {"c": "LONGCHAMPS", "p": "B1854AAA"}, {"c": "ADROGUÉ", "p": "B1846AAA"}, {"c": "BURZACO", "p": "B1852AAA"}, {"c": "GLEW", "p": "B1856AAA"}, {"c": "SAN MARTÍN", "p": "B1650AAA"}, {"c": "VILLA LYNCH", "p": "B1672AAA"}, {"c": "PALERMO GBA", "p": "B1651AAA"}, {"c": "VILLA BALLESTER", "p": "B1653AAA"}, {"c": "GENERAL SAN MARTIN", "p": "B1650AAA"}, {"c": "TRES DE FEBRERO", "p": "B1678AAA"}, {"c": "JOSE C PAZ", "p": "B1665AAA"}, {"c": "MALVINAS ARGENTINAS", "p": "B1613AAA"}, {"c": "SAN MIGUEL", "p": "B1663AAA"}, {"c": "BELLA VISTA", "p": "B1661AAA"}, {"c": "LA PLATA", "p": "B1900AAA"}, {"c": "BERISSO", "p": "B1923AAA"}, {"c": "ENSENADA", "p": "B1925AAA"}, {"c": "MAR DEL PLATA", "p": "B7600AAA"}, {"c": "BAHÍA BLANCA", "p": "B8000AAA"}, {"c": "TANDIL", "p": "B7000AAA"}, {"c": "NECOCHEA", "p": "B7630AAA"}, {"c": "MIRAMAR", "p": "B7607AAA"}, {"c": "PINAMAR", "p": "B7167AAA"}, {"c": "VILLA GESELL", "p": "B7165AAA"}, {"c": "MONTE HERMOSO", "p": "B8153AAA"}, {"c": "OLAVARRÍA", "p": "B7400AAA"}, {"c": "AZUL", "p": "B7300AAA"}, {"c": "JUNÍN", "p": "B6000AAA"}, {"c": "PERGAMINO", "p": "B2700AAA"}, {"c": "SAN NICOLÁS", "p": "B2900AAA"}, {"c": "RAMALLO", "p": "B2915AAA"}, {"c": "ZÁRATE", "p": "B2820AAA"}, {"c": "CAMPANA", "p": "B2804AAA"}, {"c": "SAN PEDRO", "p": "B2930AAA"}, {"c": "CHIVILCOY", "p": "B6620AAA"}, {"c": "BRAGADO", "p": "B6640AAA"}, {"c": "NUEVE DE JULIO", "p": "B6500AAA"}, {"c": "PEHUAJÓ", "p": "B6450AAA"}, {"c": "TRENQUE LAUQUEN", "p": "B6400AAA"}, {"c": "RIVADAVIA", "p": "B6355AAA"}, {"c": "TRES ARROYOS", "p": "B7500AAA"}, {"c": "CORONEL SUÁREZ", "p": "B7540AAA"}, {"c": "CORONEL PRINGLES", "p": "B7530AAA"}, {"c": "BENITO JUÁREZ", "p": "B7020AAA"}, {"c": "DOLORES", "p": "B7100AAA"}, {"c": "CHASCOMÚS", "p": "B7130AAA"}, {"c": "LOBOS", "p": "B7240AAA"}, {"c": "SAN ANDRÉS DE GILES", "p": "B6720AAA"}, {"c": "EXALTACIÓN DE LA CRUZ", "p": "B2806AAA"}, {"c": "ARRECIFES", "p": "B2740AAA"}, {"c": "SALTO", "p": "B2741AAA"}, {"c": "CÓRDOBA", "p": "X5000AAA"}, {"c": "RÍO CUARTO", "p": "X5800AAA"}, {"c": "SAN FRANCISCO", "p": "X2400AAA"}, {"c": "VILLA MARÍA", "p": "X5900AAA"}, {"c": "ALTA GRACIA", "p": "X5186AAA"}, {"c": "COSQUÍN", "p": "X5166AAA"}, {"c": "LA FALDA", "p": "X5172AAA"}, {"c": "CARLOS PAZ", "p": "X5152AAA"}, {"c": "JESÚS MARÍA", "p": "X5220AAA"}, {"c": "BELL VILLE", "p": "X2720AAA"}, {"c": "MARCOS JUÁREZ", "p": "X2580AAA"}, {"c": "LABOULAYE", "p": "X6120AAA"}, {"c": "RÍO TERCERO", "p": "X5850AAA"}, {"c": "VILLA DOLORES", "p": "X5870AAA"}, {"c": "DEAN FUNES", "p": "X5200AAA"}, {"c": "VILLA CARLOS PAZ", "p": "X5152AAA"}, {"c": "UNQUILLO", "p": "X5109AAA"}, {"c": "LA CALERA", "p": "X5004AAA"}, {"c": "RÍO CEBALLOS", "p": "X5115AAA"}, {"c": "SALSIPUEDES", "p": "X5118AAA"}, {"c": "SANTA FE", "p": "S3000AAA"}, {"c": "ROSARIO", "p": "S2000AAA"}, {"c": "RAFAELA", "p": "S2300AAA"}, {"c": "VENADO TUERTO", "p": "S2600AAA"}, {"c": "RECONQUISTA", "p": "S3560AAA"}, {"c": "RESISTENCIA", "p": "H3500AAA"}, {"c": "SAN LORENZO", "p": "S2200AAA"}, {"c": "CASILDA", "p": "S2170AAA"}, {"c": "CAÑADA DE GÓMEZ", "p": "S2500AAA"}, {"c": "ESPERANZA", "p": "S3080AAA"}, {"c": "SANTO TOMÉ", "p": "S3016AAA"}, {"c": "PARANÁ", "p": "E3100AAA"}, {"c": "VILLAGUAY", "p": "E3240AAA"}, {"c": "GUALEGUAYCHÚ", "p": "E2820AAA"}, {"c": "CONCORDIA", "p": "E3200AAA"}, {"c": "LA PAZ", "p": "E3190AAA"}, {"c": "DIAMANTE", "p": "E3105AAA"}, {"c": "VICTORIA", "p": "E3153AAA"}, {"c": "MENDOZA", "p": "M5500AAA"}, {"c": "GODOY CRUZ", "p": "M5501AAA"}, {"c": "GUAYMALLÉN", "p": "M5521AAA"}, {"c": "LAS HERAS", "p": "M5539AAA"}, {"c": "MAIPÚ", "p": "M5515AAA"}, {"c": "LUJÁN DE CUYO", "p": "M5507AAA"}, {"c": "SAN RAFAEL", "p": "M5600AAA"}, {"c": "GENERAL ALVEAR", "p": "M5620AAA"}, {"c": "MALARGÜE", "p": "M5613AAA"}, {"c": "RIVADAVIA MDZ", "p": "M5574AAA"}, {"c": "JUNÍN MDZ", "p": "M5570AAA"}, {"c": "SAN MARTÍN MDZ", "p": "M5570AAA"}, {"c": "SAN MIGUEL DE TUCUMÁN", "p": "T4000AAA"}, {"c": "YERBA BUENA", "p": "T4107AAA"}, {"c": "TAFÍ VIEJO", "p": "T4103AAA"}, {"c": "BANDA DEL RÍO SALÍ", "p": "T4100AAA"}, {"c": "CONCEPCIÓN", "p": "T4138AAA"}, {"c": "MONTEROS", "p": "T4142AAA"}, {"c": "FAMAILLÁ", "p": "T4132AAA"}, {"c": "SALTA", "p": "A4400AAA"}, {"c": "SAN RAMÓN DE LA NUEVA ORÁN", "p": "A4530AAA"}, {"c": "TARTAGAL", "p": "A4560AAA"}, {"c": "GENERAL GÜEMES", "p": "A4420AAA"}, {"c": "METÁN", "p": "A4440AAA"}, {"c": "ROSARIO DE LA FRONTERA", "p": "A4442AAA"}, {"c": "CAFAYATE", "p": "A4427AAA"}, {"c": "SAN SALVADOR DE JUJUY", "p": "Y4600AAA"}, {"c": "PALPALÁ", "p": "Y4612AAA"}, {"c": "LIBERTADOR GENERAL SAN MARTÍN", "p": "Y4662AAA"}, {"c": "LA QUIACA", "p": "Y4650AAA"}, {"c": "POSADAS", "p": "N3300AAA"}, {"c": "OBERÁ", "p": "N3360AAA"}, {"c": "ELDORADO", "p": "N3380AAA"}, {"c": "PUERTO IGUAZÚ", "p": "N3370AAA"}, {"c": "APÓSTOLES", "p": "N3316AAA"}, {"c": "PRESIDENCIA ROQUE SÁENZ PEÑA", "p": "H3700AAA"}, {"c": "VILLA ÁNGELA", "p": "H3540AAA"}, {"c": "CHARATA", "p": "H3730AAA"}, {"c": "CORRIENTES", "p": "W3400AAA"}, {"c": "GOYA", "p": "W3450AAA"}, {"c": "MERCEDES", "p": "W3470AAA"}, {"c": "CURUZÚ CUATIÁ", "p": "W3460AAA"}, {"c": "SANTO TOMÉ COR", "p": "W3007AAA"}, {"c": "NEUQUÉN", "p": "Q8300AAA"}, {"c": "CIPOLLETTI", "p": "R8324AAA"}, {"c": "CUTRAL CÓ", "p": "Q8322AAA"}, {"c": "PLOTTIER", "p": "Q8316AAA"}, {"c": "ZAPALA", "p": "Q8340AAA"}, {"c": "JUNÍN DE LOS ANDES", "p": "Q8371AAA"}, {"c": "SAN MARTÍN DE LOS ANDES", "p": "Q8370AAA"}, {"c": "VILLA LA ANGOSTURA", "p": "Q8407AAA"}, {"c": "VIEDMA", "p": "R8500AAA"}, {"c": "BARILOCHE", "p": "R8400AAA"}, {"c": "GENERAL ROCA", "p": "R8332AAA"}, {"c": "ALLEN", "p": "R8328AAA"}, {"c": "VILLA REGINA", "p": "R8336AAA"}, {"c": "EL BOLSÓN", "p": "R8430AAA"}, {"c": "RAWSON", "p": "U9103AAA"}, {"c": "COMODORO RIVADAVIA", "p": "U9000AAA"}, {"c": "TRELEW", "p": "U9100AAA"}, {"c": "PUERTO MADRYN", "p": "U9120AAA"}, {"c": "ESQUEL", "p": "U9200AAA"}, {"c": "RÍO GALLEGOS", "p": "Z9400AAA"}, {"c": "CALETA OLIVIA", "p": "Z9011AAA"}, {"c": "EL CALAFATE", "p": "Z9405AAA"}, {"c": "PICO TRUNCADO", "p": "Z9015AAA"}, {"c": "USHUAIA", "p": "V9410AAA"}, {"c": "RÍO GRANDE", "p": "V9420AAA"}, {"c": "SANTA ROSA", "p": "L6300AAA"}, {"c": "GENERAL PICO", "p": "L6360AAA"}, {"c": "TOAY", "p": "L6303AAA"}, {"c": "SAN LUIS", "p": "D5700AAA"}, {"c": "VILLA MERCEDES", "p": "D5730AAA"}, {"c": "MERLO SL", "p": "D5881AAA"}, {"c": "SAN JUAN", "p": "J5400AAA"}, {"c": "RAWSON SJ", "p": "J5409AAA"}, {"c": "RIVADAVIA SJ", "p": "J5413AAA"}, {"c": "CAUCETE", "p": "J5442AAA"}, {"c": "LA RIOJA", "p": "F5300AAA"}, {"c": "CHILECITO", "p": "F5360AAA"}, {"c": "SAN FERNANDO DEL VALLE DE CATAMARCA", "p": "K4700AAA"}, {"c": "TINOGASTA", "p": "K5340AAA"}, {"c": "SANTIAGO DEL ESTERO", "p": "G4200AAA"}, {"c": "LA BANDA", "p": "G4302AAA"}, {"c": "TERMAS DE RÍO HONDO", "p": "G4220AAA"}, {"c": "FRÍAS", "p": "G4230AAA"}, {"c": "FORMOSA", "p": "P3600AAA"}, {"c": "CLORINDA", "p": "P3708AAA"}, {"c": "PIRANÉ", "p": "P3612AAA"}];
 
 
 
 function wizCitySearch(q){
-  var dd = document.getElementById('wiz-city-dd');
-  if(!dd) return;
-  q = q.trim().toUpperCase();
-  if(q.length < 2){ dd.style.display='none'; return; }
-  var results = CITY_DATA.filter(function(x){
-    return x.c.indexOf(q) !== -1 || x.p.indexOf(q) !== -1;
-  }).slice(0,10);
-  if(!results.length){ dd.style.display='none'; return; }
+  var inp = document.getElementById('wiz-city-input');
+  var results_div = document.getElementById('wiz-city-results');
+  if(!inp || !results_div) return;
+  // Guardar lo que escribe el usuario como ciudad libre
+  wiz.answers.city = (q||'').toUpperCase();
+  if(wiz.answers.postalCode && q.toUpperCase() !== wiz.answers.city){
+    wiz.answers.postalCode = '';
+  }
+  var q2 = (q||'').trim().toUpperCase();
+  if(q2.length < 2){ results_div.style.display='none'; return; }
+  var data = window.CITY_DATA || [];
+  var results = data.filter(function(x){
+    return x.c.indexOf(q2) !== -1 || x.p.indexOf(q2) !== -1;
+  }).slice(0,8);
+  if(!results.length){ results_div.style.display='none'; return; }
   var h = '';
   for(var i=0;i<results.length;i++){
     var r = results[i];
-    h += '<div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between" '
-       + 'onclick="wizSelectCity(\'' + r.c.replace(/'/g,"\\'") + '\',\'' + r.p + '\')">'
-       + '<span style="color:var(--text);font-size:13px">' + r.c + '</span>'
-       + '<span style="color:var(--muted);font-family:var(--mono);font-size:11px">' + r.p + '</span>'
+    var city = r.c.replace(/'/g,"\\'");
+    h += '<div style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--card)" '
+       + 'ontouchstart="event.preventDefault();wizSelectCity(\''+city+'\',\''+r.p+'\')" '
+       + 'onmousedown="event.preventDefault();wizSelectCity(\''+city+'\',\''+r.p+'\')">'
+       + '<span style="color:var(--text);font-size:14px">'+r.c+'</span>'
+       + '<span style="color:var(--accent2);font-family:var(--mono);font-size:11px">'+r.p+'</span>'
        + '</div>';
   }
-  dd.innerHTML = h;
-  dd.style.display = 'block';
+  results_div.innerHTML = h;
+  results_div.style.display = 'block';
 }
+
 
 function wizSelectCity(city, postal){
   wiz.answers.city = city;
   wiz.answers.postalCode = postal;
   // Actualizar input
   var inp = document.getElementById('wiz-city-input');
-  if(inp) inp.value = city;
+  if(inp){ inp.value = city; inp.blur(); }
   // Cerrar dropdown
-  var dd = document.getElementById('wiz-city-dd');
+  var dd = document.getElementById('wiz-city-results');
   if(dd) dd.style.display = 'none';
   // Refrescar preview EMV
   var prev = document.querySelector('.wiz-tokens');
@@ -779,7 +797,7 @@ function rebuildBuildHTML(app){
     <div class="row2">
       <div class="field">
         <label><span class="tag">62.05</span> ID del QR / order.id <span class="pill cond">COND</span> <span class="info-pill">530</span> <span class="hint">Obligatorio si no usa API resolve. UUID recomendado.</span></label>
-        <input id="f6205" maxlength="36" placeholder="a193244a-c224-4fc0-9ce3-b9defb43efb7">
+        <div style="display:flex;gap:8px"><input id="f6205" maxlength="36" placeholder="a193244a-c224-4fc0-9ce3-b9defb43efb7" style="flex:1"><button onclick="var u=genUUID();buildState.qrId=u;document.getElementById('f6205').value=u" style="padding:0 12px;background:var(--accent);color:#000;border:none;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap">⚡ UUID</button></div>
       </div>
       <div class="field">
         <label><span class="tag">62.06</span> Customer Label <span class="pill opt">OPC</span></label>
@@ -1784,8 +1802,8 @@ function getSteps(){
     ...(a.usaApiResolve==='0' ? [{
       id: 'qrId',
       q: '¿Cuál es el ID único de este QR?',
-      hint: 'Sin API resolve, la billetera usa este campo como identificador de la transacción (order.id). Debe ser único por QR generado. Podés usar un UUID o un código propio. (CIMPRA 530, campo 62.05)',
-      type: 'text', placeholder: 'Ej: a193244a-c224-4fc0-9ce3-b9defb43efb7', maxlen: 36,
+      hint: 'Sin API resolve, la billetera usa este campo como identificador de la transacción (order.id). Debe ser único por QR generado. (CIMPRA 530, campo 62.05)',
+      type: 'qrId',
     }] : []),
     // 8 — Monto solo si dinámico
     ...(isDyn ? [{
@@ -1864,6 +1882,18 @@ function renderWizStep(){
       <option value="">— Seleccioná tu rubro —</option>
       ${groups.map(g=>`<optgroup label="${g.label}">${g.items.map(i=>`<option value="${i.v}" ${wiz.answers.mccCode===i.v?'selected':''}>${i.v} – ${i.l}</option>`).join('')}</optgroup>`).join('')}
     </select>`;
+  } else if(s.type === 'qrId'){
+    var qrIdVal = esc(wiz.answers.qrId||'');
+    body = '<div style="display:flex;gap:8px;align-items:stretch">'
+         + '<input class="wiz-input" id="wiz-qrid-input" autocomplete="off"'
+         + ' placeholder="Ej: a193244a-c224-4fc0-9ce3-b9defb43efb7"'
+         + ' value="'+qrIdVal+'" maxlength="36"'
+         + ' oninput="wiz.answers.qrId=this.value"'
+         + ' style="flex:1;min-width:0">'
+         + '<button onclick="var u=genUUID();wiz.answers.qrId=u;var inp=document.getElementById(\'wiz-qrid-input\');if(inp)inp.value=u;" '
+         + ' style="padding:0 14px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">⚡ UUID</button>'
+         + '</div>'
+         + '<p style="font-size:10px;color:var(--muted);margin-top:6px">Tocá ⚡ UUID para generar uno automáticamente, o escribí tu propio identificador.</p>';
   } else if(s.type === 'extraOptional'){
     var posVal = esc(wiz.answers.pointOfSale||'');
     var termVal = esc(wiz.answers.terminalId||'');
@@ -1877,16 +1907,17 @@ function renderWizStep(){
          + '</div>';
   } else if(s.type === 'citySearch'){
     var cityVal = esc(wiz.answers.city||'');
-    var postalInfo = wiz.answers.city
-      ? '<p style="font-size:11px;color:var(--muted);margin-top:8px">Ciudad: <strong style="color:var(--accent)">'+wiz.answers.city+'</strong> — Postal: <strong style="color:var(--accent2)">'+wiz.answers.postalCode+'</strong></p>'
-      : '';
-    body = '<div style="position:relative">'
-         + '<input class="wiz-input" id="wiz-city-input" autocomplete="off"'
+    var postalInfo = wiz.answers.city && wiz.answers.postalCode
+      ? '<div style="margin-top:10px;padding:10px 14px;background:#00d4aa15;border:1px solid var(--accent);border-radius:10px;display:flex;justify-content:space-between;align-items:center">'
+        + '<span style="color:var(--accent);font-weight:600;font-size:13px">'+esc(wiz.answers.city)+'</span>'
+        + '<span style="color:var(--accent2);font-family:var(--mono);font-size:12px">'+esc(wiz.answers.postalCode)+'</span>'
+        + '</div>'
+      : (wiz.answers.city ? '<p style="font-size:11px;color:var(--muted);margin-top:6px">Ciudad libre: <strong style="color:var(--text)">'+esc(wiz.answers.city)+'</strong> — ingresá el CPA en el siguiente paso.</p>' : '');
+    body = '<input class="wiz-input" id="wiz-city-input" autocomplete="off"'
          + ' placeholder="Escribi la ciudad..." value="'+cityVal+'"'
-         + ' oninput="wiz.answers.city=this.value.toUpperCase();wizCitySearch(this.value)"'
-         + ' style="width:100%">'
-         + '<div id="wiz-city-dd" style="display:none;position:absolute;z-index:999;background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:220px;overflow-y:auto;width:100%;box-shadow:0 4px 20px rgba(0,0,0,.5);top:100%;left:0"></div>'
-         + '</div>'
+         + ' oninput="wizCitySearch(this.value)"'
+         + ' style="width:100%;margin-bottom:8px">'
+         + '<div id="wiz-city-results" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);display:none"></div>'
          + postalInfo;
   } else {
     body = `<input class="wiz-input" id="wiz-input"
@@ -1962,6 +1993,13 @@ function wizNext(){
     var cvu = (wiz.answers.cvu||'').trim();
     if(!/^[0-9]{22}$/.test(cvu)){
       alert('El CVU/CBU debe tener exactamente 22 dígitos numéricos, sin espacios ni guiones.');return;
+    }
+  }
+  if(s.type==='qrId'){
+    var qrIdInp = document.getElementById('wiz-qrid-input');
+    if(qrIdInp && qrIdInp.value.trim()) wiz.answers.qrId = qrIdInp.value.trim();
+    if(!wiz.answers.qrId){
+      alert('El ID del QR es obligatorio. Tocá ⚡ UUID para generar uno.');return;
     }
   }
   if(s.type==='citySearch'){
