@@ -71,7 +71,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
 .alert.ok{background:#22c55e15;border:1px solid #22c55e30;color:#86efac}
 #scanner-wrapper{display:none;position:relative;width:100%;border-radius:12px;overflow:hidden;margin-bottom:10px;background:#000}
 #scanner-video{width:100%;display:block;border-radius:12px;max-height:260px;object-fit:cover}
-#scanner-canvas{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px}
+#scanner-canvas{display:none}
 .scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .scan-frame{width:170px;height:170px;border:2px solid var(--accent);border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);position:relative}
 .scan-line{position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanline 2s ease-in-out infinite;top:10%}
@@ -1104,134 +1104,75 @@ function renderDecode(app){
 
 
 
-function toggleScanner(){
-  if(scanStream){ stopScanner(); }
-  else { startScanner(); }
-}
-
+async function toggleScanner(){const w=document.getElementById('scanner-wrapper');if(w&&w.style.display==='block'){stopScanner();return}await startScanner()}
 async function startScanner(){
-  var w=document.getElementById('scanner-wrapper');
-  var v=document.getElementById('scanner-video');
-  var btn=document.getElementById('scan-toggle-btn');
-  var sb=document.getElementById('stop-scan-btn');
-  var st=document.getElementById('scan-status');
-  if(!w) return;
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    if(st) st.textContent='Sin soporte de camara en este browser.'; return;
-  }
-  if(st) st.textContent='Solicitando acceso...';
-  var tries=[
-    {video:{facingMode:{exact:'environment'},width:{ideal:1280},height:{ideal:720}}},
-    {video:{facingMode:'environment'}},
-    {video:true}
-  ];
-  var err=null;
-  for(var i=0;i<tries.length;i++){
-    try{ scanStream=await navigator.mediaDevices.getUserMedia(tries[i]); break; }
-    catch(e){ err=e; scanStream=null; }
-  }
-  if(!scanStream){
-    var n=err?err.name:'';
-    if(st) st.innerHTML=(n==='NotAllowedError'||n==='PermissionDeniedError')
-      ?'<strong>Permiso denegado.</strong> Toca el candado en la barra y permite la camara.'
-      :'No se pudo acceder a la camara.';
-    return;
-  }
-  v.srcObject=scanStream;
-  w.style.display='block';
-  if(sb) sb.style.display='block';
-  if(btn) btn.innerHTML='<span>\uD83D\uDCF7</span> Camara activa';
-  if(st) st.textContent='Iniciando...';
-  try{ await v.play(); }catch(e){ if(st) st.textContent='Error: '+e.message; return; }
-  // Esperar primer frame
-  await new Promise(function(resolve){
-    if(v.readyState>=2){ resolve(); return; }
-    v.addEventListener('canplay',resolve,{once:true});
-    setTimeout(resolve,2000);
-  });
-  if(st) st.textContent='Apunta al QR...';
-  _scanActive=true;
-  scanLoop();
+  const w=document.getElementById('scanner-wrapper'),v=document.getElementById('scanner-video');
+  const btn=document.getElementById('scan-toggle-btn'),sb=document.getElementById('stop-scan-btn'),st=document.getElementById('scan-status');
+  if(!w)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){st.textContent='❌ Browser sin soporte de cámara.';return}
+  st.textContent='Solicitando acceso…';
+  const tries=[{video:{facingMode:{exact:'environment'}}},{video:{facingMode:'environment'}},{video:true}];
+  let err=null;
+  for(const c of tries){try{scanStream=await navigator.mediaDevices.getUserMedia(c);break}catch(e){err=e;scanStream=null}}
+  if(!scanStream){const n=err?.name||'';st.innerHTML=(n==='NotAllowedError'||n==='PermissionDeniedError')?`<strong>Permiso denegado.</strong><br>Chrome: 🔒 → Cámara → Permitir → recargar. Safari: Ajustes → Safari → Cámara → Permitir.`:'❌ '+(err?.message||'No se pudo acceder.');return}
+  v.srcObject=scanStream;await v.play();
+  w.style.display='block';sb.style.display='block';btn.innerHTML='<span>📷</span> Cámara activa';st.textContent='Apuntá al QR…';scanLoop();
 }
-
+var _barcodeDetector = null;
 if(window.BarcodeDetector){
   window.BarcodeDetector.getSupportedFormats().then(function(fmts){
-    if(fmts.indexOf('qr_code')>=0){
-      _barcodeDetector=new window.BarcodeDetector({formats:['qr_code']});
+    if(fmts.indexOf('qr_code') >= 0){
+      _barcodeDetector = new window.BarcodeDetector({formats:['qr_code']});
     }
   }).catch(function(){});
 }
 
 function scanLoop(){
-  var v  = document.getElementById('scanner-video');
-  var cv = document.getElementById('scanner-canvas');
-  var st = document.getElementById('scan-status');
-  if(!scanStream || !_scanActive || !v || !cv) return;
-
-  if(v.readyState < 2 || v.videoWidth === 0){
-    scanRaf = setTimeout(scanLoop, 100); return;
-  }
-
-  // Dibujar frame en canvas
-  cv.width  = v.videoWidth;
-  cv.height = v.videoHeight;
-  var ctx = cv.getContext('2d', {willReadFrequently:true});
-  ctx.drawImage(v, 0, 0);
-  if(st) st.textContent = 'Escaneando... ' + cv.width + 'x' + cv.height;
+  const v=document.getElementById('scanner-video'),cv=document.getElementById('scanner-canvas');
+  if(!scanStream||!v||!cv)return;
+  if(v.readyState!==v.HAVE_ENOUGH_DATA){scanRaf=requestAnimationFrame(scanLoop);return}
 
   function onDetected(data){
-    _scanActive = false;
-    if(scanRaf){ clearTimeout(scanRaf); scanRaf = null; }
-    if(st) st.textContent = '✅ QR detectado!';
+    const st=document.getElementById('scan-status');
+    if(st) st.textContent='✅ QR detectado!';
     stopScanner();
-    var inp = document.getElementById('decode-input');
-    if(inp) inp.value = data;
+    const inp=document.getElementById('decode-input');
+    if(inp) inp.value=data;
     renderDecodeResult(data);
   }
 
-  function tryJsQR(){
-    try{
-      var d = ctx.getImageData(0, 0, cv.width, cv.height);
-      var code = jsQR(d.data, d.width, d.height, {inversionAttempts:'attemptBoth'});
-      if(code && code.data){ onDetected(code.data); return; }
-    }catch(e){}
-    scanRaf = setTimeout(scanLoop, 200);
-  }
-
   if(_barcodeDetector){
-    // Intentar con ImageBitmap — más compatible que canvas/video directo
-    createImageBitmap(cv).then(function(bmp){
-      if(!_scanActive){ bmp.close && bmp.close(); return; }
-      _barcodeDetector.detect(bmp).then(function(codes){
-        bmp.close && bmp.close();
-        if(!_scanActive) return;
-        if(codes && codes.length > 0 && codes[0].rawValue){
-          onDetected(codes[0].rawValue);
-        } else {
-          scanRaf = setTimeout(scanLoop, 150);
-        }
-      }).catch(function(){ bmp.close && bmp.close(); tryJsQR(); });
-    }).catch(function(){ tryJsQR(); });
+    // BarcodeDetector: pasar el video element directo — así funcionó
+    _barcodeDetector.detect(v).then(function(codes){
+      if(!scanStream) return;
+      if(codes && codes.length > 0 && codes[0].rawValue){
+        onDetected(codes[0].rawValue);
+      } else {
+        scanRaf = requestAnimationFrame(scanLoop);
+      }
+    }).catch(function(){
+      // fallback jsQR
+      cv.width=v.videoWidth; cv.height=v.videoHeight;
+      const ctx=cv.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(v,0,0,cv.width,cv.height);
+      const d=ctx.getImageData(0,0,cv.width,cv.height);
+      const code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
+      if(code&&code.data){ onDetected(code.data); }
+      else { scanRaf=requestAnimationFrame(scanLoop); }
+    });
   } else {
-    tryJsQR();
+    // jsQR puro
+    cv.width=v.videoWidth; cv.height=v.videoHeight;
+    const ctx=cv.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(v,0,0,cv.width,cv.height);
+    const d=ctx.getImageData(0,0,cv.width,cv.height);
+    const code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
+    if(code&&code.data){ onDetected(code.data); }
+    else { scanRaf=requestAnimationFrame(scanLoop); }
   }
 }
-
-function jsqrFrame(onDetected){
-  var v=document.getElementById('scanner-video');
-  var cv=document.getElementById('scanner-canvas');
-  if(!v||!cv||!scanStream||!_scanActive){ return; }
-  cv.width=v.videoWidth; cv.height=v.videoHeight;
-  var ctx=cv.getContext('2d',{willReadFrequently:true});
-  ctx.drawImage(v,0,0,cv.width,cv.height);
-  var d=ctx.getImageData(0,0,cv.width,cv.height);
-  var code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
-  if(code&&code.data){ onDetected(code.data); }
-  else { scanRaf=setTimeout(scanLoop,100); }
-}
-
 function stopScanner(){
-  if(scanRaf){clearTimeout(scanRaf);cancelAnimationFrame(scanRaf);scanRaf=null}
+  if(scanRaf){cancelAnimationFrame(scanRaf);scanRaf=null}
   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
   const w=document.getElementById('scanner-wrapper'),sb=document.getElementById('stop-scan-btn'),btn=document.getElementById('scan-toggle-btn');
   if(w)w.style.display='none';if(sb)sb.style.display='none';if(btn)btn.innerHTML='<span>📷</span> Escanear con cámara';
