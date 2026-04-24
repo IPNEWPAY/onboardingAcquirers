@@ -240,7 +240,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
 <body>
 <header>
   <div>
-    <span class="logo-badge">NEWPAY · PCT v0.15</span>
+    <span class="logo-badge">NEWPAY · PCT v0.16</span>
     <span class="logo-badge2">CIMPRA 525/530/535/540</span>
   </div>
   <h1>QR Builder<br><span>Transferencias 3.0</span></h1>
@@ -1709,7 +1709,8 @@ function renderWizard(app){
       mccLabel: '',
       aceptadorDomain: '', // 26.00
       adminCuit: '',     // 26.98
-      usaApiResolve: '',  // 26.99 — se asigna en paso 6
+      usaApiResolve: '',  // 26.99
+      adminCuit: '',     // 26.98
       amount: '',        // 54
       postalCode: '',    // 61
       qrId: '',          // 62.05
@@ -1729,107 +1730,66 @@ function getSteps(){
   const a = wiz.answers;
   const isDyn = a.initMethod === '12';
   const steps = [
-    // 0
+
+    // ── PASO 1: Tipo de QR ──
     {
       id: 'initMethod',
       q: '¿Cómo vas a usar este QR?',
-      hint: 'El QR estático es ideal para tener impreso en el mostrador. El dinámico se genera por transacción y puede incluir monto fijo.',
+      hint: 'El QR estático es ideal para imprimir en el mostrador. El dinámico se genera por transacción y puede incluir monto fijo.',
       type: 'options',
       options: [
         {value:'11', title:'QR Estático', desc:'El mismo QR para múltiples pagos. Ideal para imprimir y pegar. El cliente ingresa el monto.'},
         {value:'12', title:'QR Dinámico', desc:'Un QR por transacción. Incluye el monto fijo. Requiere sistema que lo genere cada vez.'},
       ]
     },
-    // 1
+
+    // ── PASO 2: Datos del comercio (nombre + ciudad) ──
     {
-      id: 'merchantName',
-      q: '¿Cómo se llama tu comercio?',
-      hint: 'Nombre que aparece en la app del cliente al escanear. Máximo 25 caracteres.',
-      type: 'text', placeholder: 'Ej: PANADERIA EL TRIGO', maxlen: 25,
+      id: 'comercio',
+      q: 'Datos de tu comercio',
+      hint: 'Son los datos que ve el cliente cuando escanea el QR.',
+      type: 'comercio',
     },
-    // 2
+
+    // ── PASO 3: Datos técnicos del aceptador (MCC + dominio) ──
     {
-      id: 'city',
-      q: '¿En qué ciudad está tu comercio?',
-      hint: 'Escribí las primeras letras para buscar. El código postal se completa automáticamente.',
-      type: 'citySearch',
+      id: 'aceptador',
+      q: 'Datos de tu aceptador',
+      hint: 'Tu banco, procesador o billetera te provee estos datos.',
+      type: 'aceptador',
     },
-    // 3
+
+    // ── PASO 4: Configuración del esquema (CUIT admin + API resolve) ──
     {
-      id: 'mcc',
-      q: '¿A qué rubro pertenece tu negocio?',
-      hint: 'El código MCC categoriza el tipo de comercio según la tabla VISA/AFIP (CIMPRA 530).',
-      type: 'mcc',
+      id: 'esquema',
+      q: 'Configuración del esquema de pagos',
+      hint: 'Datos del administrador del esquema y cómo resuelve la billetera el QR.',
+      type: 'esquema',
     },
-    // 4
-    {
-      id: 'aceptadorDomain',
-      q: '¿Cuál es el dominio invertido de tu aceptador?',
-      hint: 'Tu aceptador (banco, procesador o billetera) te provee este dato. Formato dominio invertido. Ej: <code>ar.com.modo</code>, <code>com.prisma</code>.',
-      type: 'text', placeholder: 'Ej: ar.com.modo',
-    },
-    // 5
-    {
-      id: 'adminCuit',
-      q: '¿Cuál es el CUIT del administrador del esquema?',
-      hint: 'El administrador del esquema de pagos. Solo va el número en el QR. (CIMPRA 530, subcampo 98)',
-      type: 'options',
-      options: [
-        {value:'30717862453', title:'30717862453', desc:'Newpay'},
-        {value:'30692264785', title:'30692264785', desc:'Coelsa'},
-        {value:'33629749859', title:'33629749859', desc:'Link'},
-      ]
-    },
-    // 6 — API resolve (siempre, para cualquier tipo de QR)
-    {
-      id: 'usaApiResolve',
-      q: '¿Tu aceptador usa API resolve?',
-      hint: 'Con API resolve (subcampo 99=1), la billetera consulta al aceptador para obtener los datos de la transacción. Sin API resolve (subcampo 99=0), el QR debe ser autosuficiente con CVU embebido.',
-      type: 'options',
-      options: [
-        {value:'1', title:'Sí usa API resolve (subcampo 99=1)', desc:'La billetera consulta al aceptador. Recomendado. La mayoría de los aceptadores lo usan.'},
-        {value:'0', title:'No usa API resolve (subcampo 99=0)', desc:'El QR es autosuficiente. Requiere CVU/CBU embebido en template 51.'},
-      ]
-    },
-    // 7 — CVU solo si NO usa API resolve
-    ...(a.usaApiResolve==='0' ? [{
-      id: 'cvu',
-      q: '¿Cuál es el CVU o CBU del aceptador?',
-      hint: 'Sin API resolve, el CVU/CBU debe ir embebido en el QR (template 51). 22 dígitos. (CIMPRA 525)',
-      type: 'text', placeholder: 'Ej: 0000074900000000000000', maxlen: 22, inputmode: 'numeric',
+
+    // ── PASO 5: CVU + QR ID (solo si no usa API resolve) ──
+    ...(a.usaApiResolve === '0' ? [{
+      id: 'sinIEP',
+      q: 'Datos para QR sin API resolve',
+      hint: 'Sin API resolve el QR debe ser autosuficiente: necesita el CVU/CBU y un ID único de transacción.',
+      type: 'sinIEP',
     }] : []),
-    // 7b — ID del QR (62.05) obligatorio cuando no usa API resolve
-    ...(a.usaApiResolve==='0' ? [{
-      id: 'qrId',
-      q: '¿Cuál es el ID único de este QR?',
-      hint: 'Sin API resolve, la billetera usa este campo como identificador de la transacción (order.id). Debe ser único por QR generado. (CIMPRA 530, campo 62.05)',
-      type: 'qrId',
-    }] : []),
-    // 8 — Monto solo si dinámico
-    ...(isDyn ? [{
-      id: 'amount',
-      q: '¿Cuál es el monto de la transacción?',
-      hint: 'En QR dinámico el monto va embebido en el QR. Usá punto como separador decimal.',
-      type: 'text', placeholder: 'Ej: 1500.00', inputmode: 'decimal',
-    }] : []),
-    // 9 — Código postal: automático si vino del buscador, manual si el usuario escribió ciudad libre
-    ...(wiz.answers.city && !wiz.answers.postalCode ? [{
-      id: 'postalCode',
-      q: '¿Cuál es el código postal de ' + (wiz.answers.city||'tu comercio') + '?',
-      hint: 'La ciudad que ingresaste no está en nuestra lista. Ingresá el código postal manualmente. Formato CPA de 8 caracteres alfanuméricos. Ej: C1001AAA, B1636AVS.',
-      type: 'text', placeholder: 'Ej: C1001AAA', maxlen: 8,
-    }] : []),
-    // 10 — POS y Terminal: paso combinado opcional
+
+    // ── PASO 6: Monto (si dinámico) + opcionales ──
     {
-      id: 'extraOptional',
-      q: 'Datos opcionales de identificación',
-      hint: 'Opcional. Podés identificar el punto de venta (sucursal/caja) y/o la terminal. Si no querés completarlos, omitilo y generá el QR.',
-      type: 'extraOptional',
-      optional: true,
+      id: 'extras',
+      q: isDyn ? 'Monto y datos opcionales' : 'Datos opcionales',
+      hint: isDyn
+        ? 'El monto es obligatorio en QR dinámico. El punto de venta y terminal son opcionales.'
+        : 'Datos opcionales de identificación del punto de venta.',
+      type: 'extras',
     },
+
   ];
   return steps;
 }
+
+
 
 
 function renderWizStep(){
@@ -1894,6 +1854,120 @@ function renderWizStep(){
          + ' style="padding:0 14px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">⚡ UUID</button>'
          + '</div>'
          + '<p style="font-size:10px;color:var(--muted);margin-top:6px">Tocá ⚡ UUID para generar uno automáticamente, o escribí tu propio identificador.</p>';
+  } else if(s.type === 'comercio'){
+    // Paso 2: nombre + ciudad
+    var nameVal = esc(wiz.answers.merchantName||'');
+    var cityVal = esc(wiz.answers.city||'');
+    var postalInfo = '';
+    if(wiz.answers.city && wiz.answers.postalCode){
+      postalInfo = '<div style="margin-top:6px;padding:8px 12px;background:#00d4aa15;border:1px solid var(--accent);border-radius:8px;display:flex;justify-content:space-between">'
+        + '<span style="color:var(--accent);font-weight:600;font-size:12px">'+esc(wiz.answers.city)+'</span>'
+        + '<span style="color:var(--accent2);font-family:var(--mono);font-size:11px">'+esc(wiz.answers.postalCode)+'</span>'
+        + '</div>';
+    } else if(wiz.answers.city){
+      postalInfo = '<div class="field" style="margin-top:8px"><label style="font-size:11px;color:var(--muted)">Código postal de '+esc(wiz.answers.city)+' (CPA 8 chars)</label>'
+        + '<input class="wiz-input" id="wiz-postal-input" maxlength="8" placeholder="Ej: C1001AAA" value="'+esc(wiz.answers.postalCode||'')+'"'
+        + ' oninput="wiz.answers.postalCode=this.value.toUpperCase()" style="width:100%;margin-top:4px"></div>';
+    }
+    body = '<div class="field" style="margin-bottom:12px">'
+         + '<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Nombre del comercio <span style="color:var(--err)">*</span></label>'
+         + '<input class="wiz-input" id="wiz-name-input" maxlength="25" placeholder="Ej: PANADERIA EL TRIGO" value="'+nameVal+'"'
+         + ' oninput="wiz.answers.merchantName=this.value.toUpperCase()" style="width:100%">'
+         + '<p style="font-size:10px;color:var(--muted);margin-top:3px">Máx 25 chars. Aparece en la app del cliente al escanear.</p>'
+         + '</div>'
+         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Ciudad <span style="color:var(--err)">*</span></label>'
+         + '<input class="wiz-input" id="wiz-city-input" autocomplete="off" placeholder="Escribi la ciudad..." value="'+cityVal+'"'
+         + ' oninput="wizCitySearch(this.value)" style="width:100%;margin-bottom:6px">'
+         + '<div id="wiz-city-results" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);display:none;margin-bottom:6px"></div>'
+         + postalInfo
+         + '</div>';
+
+  } else if(s.type === 'aceptador'){
+    // Paso 3: MCC + dominio invertido
+    var mccOpts = MCC_LIST ? MCC_LIST.slice(0,5) : [];
+    var mccVal = esc(wiz.answers.mccCode||'');
+    var mccLabel = esc(wiz.answers.mccLabel||'');
+    var domVal = esc(wiz.answers.aceptadorDomain||'');
+    body = '<div class="field" style="margin-bottom:12px">'
+         + '<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Rubro (MCC) <span style="color:var(--err)">*</span></label>'
+         + '<div id="wiz-mcc-zone"></div>'
+         + '</div>'
+         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Dominio invertido del aceptador <span style="color:var(--err)">*</span></label>'
+         + '<input class="wiz-input" id="wiz-dom-input" maxlength="32" placeholder="Ej: ar.com.modo" value="'+domVal+'"'
+         + ' oninput="wiz.answers.aceptadorDomain=this.value.toLowerCase()" style="width:100%">'
+         + '<p style="font-size:10px;color:var(--muted);margin-top:3px">Tu aceptador te provee este dato. Ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.prisma</code></p>'
+         + '</div>';
+
+  } else if(s.type === 'esquema'){
+    // Paso 4: CUIT admin + API resolve
+    var cuitSel = wiz.answers.adminCuit||'';
+    var apiSel = wiz.answers.usaApiResolve||'';
+    body = body = '<div class="field" style="margin-bottom:14px">'
+         + '<label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block">CUIT del administrador del esquema <span style="color:var(--err)">*</span></label>'
+         + '<select id="wiz-cuit-select" class="wiz-input" style="width:100%" onchange="wiz.answers.adminCuit=this.value">'
+         + '<option value="">-- Seleccioná el administrador --</option>'
+         + '<option value="30717862453" '+(cuitSel==='30717862453'?'selected':'')+'>30717862453 – Newpay</option>'
+         + '<option value="30692264785" '+(cuitSel==='30692264785'?'selected':'')+'>30692264785 – Coelsa</option>'
+         + '<option value="33629749859" '+(cuitSel==='33629749859'?'selected':'')+'>33629749859 – Link</option>'
+         + '</select></div>'
+         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block">¿Tu aceptador usa API resolve? <span style="color:var(--err)">*</span></label>'
+         + '<div style="display:flex;flex-direction:column;gap:8px">'
+         + [['1','Sí usa API resolve (99=01)','La billetera consulta al aceptador. Recomendado.'],
+            ['0','No usa API resolve (99=00)','QR autosuficiente. Requiere CVU embebido.']]
+           .map(function(x){
+             var sel=apiSel===x[0];
+             return '<div ontouchstart="wiz.answers.usaApiResolve=\''+x[0]+'\';renderWizStep()" '
+               + 'onclick="wiz.answers.usaApiResolve=\''+x[0]+'\';renderWizStep()" '
+               + 'style="padding:10px 14px;border-radius:10px;border:2px solid '+(sel?'var(--accent)':'var(--border)')+';background:'+(sel?'#00d4aa15':'var(--bg)')+';cursor:pointer">'
+               + '<div style="font-size:12px;font-weight:700;color:'+(sel?'var(--accent)':'var(--text)')+'">'+x[1]+'</div>'
+               + '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+x[2]+'</div>'
+               + '</div>';
+           }).join('')
+         + '</div></div>';
+
+  } else if(s.type === 'sinIEP'){
+    // Paso 5: CVU + QR ID (sin API resolve)
+    var cvuVal = esc(wiz.answers.cvu||'');
+    var qrIdVal = esc(wiz.answers.qrId||'');
+    body = '<div class="field" style="margin-bottom:12px">'
+         + '<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">CVU / CBU del aceptador <span style="color:var(--err)">*</span></label>'
+         + '<input class="wiz-input" id="wiz-cvu-input" maxlength="22" inputmode="numeric" placeholder="22 dígitos" value="'+cvuVal+'"'
+         + ' oninput="wiz.answers.cvu=this.value" style="width:100%">'
+         + '<p style="font-size:10px;color:var(--muted);margin-top:3px">Exactamente 22 dígitos numéricos. (CIMPRA 525, template 51)</p>'
+         + '</div>'
+         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">ID único del QR (62.05) <span style="color:var(--err)">*</span></label>'
+         + '<div style="display:flex;gap:8px">'
+         + '<input class="wiz-input" id="wiz-qrid-input" maxlength="36" placeholder="UUID o código propio" value="'+qrIdVal+'"'
+         + ' oninput="wiz.answers.qrId=this.value" style="flex:1;min-width:0">'
+         + '<button ontouchstart="var u=genUUID();wiz.answers.qrId=u;var el=document.getElementById(\'wiz-qrid-input\');if(el)el.value=u" '
+         + 'onclick="var u=genUUID();wiz.answers.qrId=u;var el=document.getElementById(\'wiz-qrid-input\');if(el)el.value=u" '
+         + 'style="padding:0 14px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">⚡ UUID</button>'
+         + '</div></div>';
+
+  } else if(s.type === 'extras'){
+    // Paso 6: monto (si dinámico) + opcionales
+    var isDyn6 = wiz.answers.initMethod === '12';
+    var amtVal = esc(wiz.answers.amount||'');
+    var posVal = esc(wiz.answers.pointOfSale||'');
+    var termVal = esc(wiz.answers.terminalId||'');
+    body = (isDyn6
+      ? '<div class="field" style="margin-bottom:12px">'
+        + '<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Monto de la transacción <span style="color:var(--err)">*</span></label>'
+        + '<input class="wiz-input" id="wiz-amount-input" inputmode="decimal" placeholder="Ej: 1500.00" value="'+amtVal+'"'
+        + ' oninput="wiz.answers.amount=this.value" style="width:100%">'
+        + '<p style="font-size:10px;color:var(--muted);margin-top:3px">Usar punto como separador decimal.</p>'
+        + '</div>'
+      : '')
+      + '<div style="background:#0d1625;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">'
+      + '<p style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Opcionales</p>'
+      + '<div class="field" style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Punto de venta / Sucursal</label>'
+      + '<input class="wiz-input" placeholder="Ej: SUCURSAL-CENTRO" value="'+posVal+'"'
+      + ' oninput="wiz.answers.pointOfSale=this.value" style="width:100%"></div>'
+      + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Terminal / Dispositivo POS</label>'
+      + '<input class="wiz-input" placeholder="Ej: TRM-001" value="'+termVal+'"'
+      + ' oninput="wiz.answers.terminalId=this.value" style="width:100%"></div>'
+      + '</div>';
+
   } else if(s.type === 'extraOptional'){
     var posVal = esc(wiz.answers.pointOfSale||'');
     var termVal = esc(wiz.answers.terminalId||'');
@@ -1951,70 +2025,121 @@ function renderWizStep(){
       </div>
     </div>`;
 
-  setTimeout(()=>{const el=document.getElementById('wiz-input');if(el)el.focus()},80);
+  setTimeout(function(){
+    // Inicializar MCC select si el paso lo requiere
+    var mccZone = document.getElementById('wiz-mcc-zone');
+    if(mccZone && typeof MCC_LIST !== 'undefined'){
+      var sel = '<select id="wiz-mcc-select" class="wiz-input" style="width:100%" '
+              + 'onchange="var o=this.options[this.selectedIndex];wiz.answers.mccCode=this.value;wiz.answers.mccLabel=o.text">'
+              + '<option value="">-- Seleccioná el rubro --</option>';
+      for(var mi=0;mi<MCC_LIST.length;mi++){
+        var m=MCC_LIST[mi];
+        var msel = wiz.answers.mccCode===String(m.v)?'selected':'';
+        sel += '<option value="'+m.v+'" '+msel+'>'+m.l+'</option>';
+      }
+      sel += '</select>';
+      mccZone.innerHTML = sel;
+    }
+    var el=document.getElementById('wiz-input');
+    if(el) el.focus();
+  },80);
 }
 
 function wizNext(){
   const steps = getSteps();
   const s = steps[wiz.step];
-  // Validar
-  if(s.type==='options' && !wiz.answers[s.id]){
-    alert('Por favor elegí una opción para continuar.');return;
+  if(!s) return;
+
+  // ── Validaciones por tipo de paso ──
+  if(s.type === 'options' && !wiz.answers[s.id]){
+    alert('Por favor elegí una opción para continuar.'); return;
   }
-  if(s.type==='mcc' && !wiz.answers.mccCode){
-    alert('Por favor seleccioná tu rubro.');return;
+
+  if(s.type === 'comercio'){
+    var nameInp = document.getElementById('wiz-name-input');
+    if(nameInp) wiz.answers.merchantName = nameInp.value.trim().toUpperCase();
+    if(!wiz.answers.merchantName){ alert('El nombre del comercio es obligatorio.'); return; }
+    var cityInp = document.getElementById('wiz-city-input');
+    if(cityInp && cityInp.value.trim()) wiz.answers.city = cityInp.value.trim().toUpperCase();
+    if(!wiz.answers.city){ alert('La ciudad es obligatoria.'); return; }
+    // Si ciudad escrita manualmente, verificar que tenga postal
+    if(!wiz.answers.postalCode){
+      var postalInp = document.getElementById('wiz-postal-input');
+      if(postalInp) wiz.answers.postalCode = postalInp.value.trim().toUpperCase();
+    }
+    // Guardar postal manual si existe
+    if(!wiz.answers.postalCode){
+      var postalInp = document.getElementById('wiz-postal-input');
+      if(postalInp && postalInp.value.trim()) wiz.answers.postalCode = postalInp.value.trim().toUpperCase();
+    }
+    // Postal obligatorio para dinámico
+    if(wiz.answers.initMethod === '12' && !wiz.answers.postalCode){
+      alert('En QR dinámico el código postal es obligatorio. Elegí la ciudad del buscador o ingresá el CPA manualmente.'); return;
+    }
   }
-  if(s.type==='text' && !s.optional && !(wiz.answers[s.id]||'').trim()){
-    alert('Este campo es obligatorio.');return;
-  }
-  // Validación específica del dominio invertido
-  if(s.id === 'aceptadorDomain'){
-    var dom = (wiz.answers.aceptadorDomain||'').trim();
-    // Debe tener al menos 2 segmentos separados por punto
+
+  if(s.type === 'aceptador'){
+    var mccInp = document.getElementById('wiz-mcc-select');
+    if(mccInp){ wiz.answers.mccCode = mccInp.value; wiz.answers.mccLabel = mccInp.options[mccInp.selectedIndex].text; }
+    if(!wiz.answers.mccCode){ alert('El rubro (MCC) es obligatorio.'); return; }
+    var domInp = document.getElementById('wiz-dom-input');
+    if(domInp) wiz.answers.aceptadorDomain = domInp.value.trim().toLowerCase();
+    var dom = wiz.answers.aceptadorDomain;
+    if(!dom){ alert('El dominio invertido es obligatorio.'); return; }
     var parts = dom.split('.');
     if(parts.length < 2 || parts.some(function(p){ return p.length === 0; })){
-      alert('El dominio invertido debe tener al menos dos segmentos separados por punto.\nEj: ar.com.modo, com.prisma');return;
+      alert('El dominio invertido debe tener al menos dos segmentos. Ej: ar.com.modo'); return;
     }
-    // No debe contener espacios ni caracteres inválidos
     if(/[^a-zA-Z0-9._-]/.test(dom)){
-      alert('El dominio invertido solo puede contener letras, números, puntos y guiones.\nEj: ar.com.modo');return;
+      alert('El dominio solo puede contener letras, números, puntos y guiones.'); return;
     }
-    // No debe empezar ni terminar con punto
-    if(dom.startsWith('.') || dom.endsWith('.')){
-      alert('El dominio invertido no puede empezar ni terminar con un punto.');return;
+    // No puede terminar con TLD genérico (.com, .net, .org, .ar, etc)
+    // Regla: si el último segmento tiene 2 letras (.ar, .br), el anteúltimo no puede tener 3+ (.com.ar)
+    // Y no puede terminar directamente en 3+ letras (.com, .net, .org)
+    // Validar que no termine en TLD convencional conocido
+    var last = parts[parts.length-1];
+    var prev = parts.length >= 2 ? parts[parts.length-2] : '';
+    var knownTLDs = ['com','net','org','edu','gov','mil','int','info','biz','io','co'];
+    var ccTLDs = ['ar','br','mx','cl','uy','py','bo','pe','ec','ve','co','us','uk','es','fr','de','it','jp','cn'];
+    if(knownTLDs.indexOf(last) !== -1){
+      alert('Formato invalido: no puede terminar en .' + last + '. Usa el formato invertido. Ej: ar.com.modo (no modo.com)'); return;
     }
-    // Longitud máxima 32 chars (EMV spec)
-    if(dom.length > 32){
-      alert('El dominio invertido no puede superar los 32 caracteres (límite EMV).');return;
-    }
-  }
-  // Validación CVU/CBU: exactamente 22 dígitos numéricos
-  if(s.id === 'cvu'){
-    var cvu = (wiz.answers.cvu||'').trim();
-    if(!/^[0-9]{22}$/.test(cvu)){
-      alert('El CVU/CBU debe tener exactamente 22 dígitos numéricos, sin espacios ni guiones.');return;
-    }
-  }
-  if(s.type==='qrId'){
-    var qrIdInp = document.getElementById('wiz-qrid-input');
-    if(qrIdInp && qrIdInp.value.trim()) wiz.answers.qrId = qrIdInp.value.trim();
-    if(!wiz.answers.qrId){
-      alert('El ID del QR es obligatorio. Tocá ⚡ UUID para generar uno.');return;
+    if(ccTLDs.indexOf(last) !== -1 && knownTLDs.indexOf(prev) !== -1){
+      alert('Formato invalido: no puede terminar en .' + prev + '.' + last + '. Usa el formato invertido. Ej: ar.com.modo (no modo.com.ar)'); return;
     }
   }
-  if(s.type==='citySearch'){
-    var cityInp = document.getElementById('wiz-city-input');
-    var cityTyped = cityInp ? cityInp.value.trim() : '';
-    if(!wiz.answers.city && cityTyped) wiz.answers.city = cityTyped.toUpperCase();
-    if(!wiz.answers.city){
-      alert('Por favor ingresá una ciudad.');return;
+
+  if(s.type === 'esquema'){
+    if(!wiz.answers.adminCuit){ alert('Elegí el administrador del esquema.'); return; }
+    if(!wiz.answers.usaApiResolve){ alert('Indicá si tu aceptador usa API resolve.'); return; }
+  }
+
+  if(s.type === 'sinIEP'){
+    var cvuInp = document.getElementById('wiz-cvu-input');
+    if(cvuInp) wiz.answers.cvu = cvuInp.value.trim();
+    if(!/^[0-9]{22}$/.test(wiz.answers.cvu)){
+      alert('El CVU/CBU debe tener exactamente 22 dígitos numéricos.'); return;
+    }
+    var qrInp = document.getElementById('wiz-qrid-input');
+    if(qrInp) wiz.answers.qrId = qrInp.value.trim();
+    if(!wiz.answers.qrId){ alert('El ID del QR es obligatorio. Tocá ⚡ UUID para generar uno.'); return; }
+  }
+
+  if(s.type === 'extras'){
+    var isDyn = wiz.answers.initMethod === '12';
+    if(isDyn){
+      var amtInp = document.getElementById('wiz-amount-input');
+      if(amtInp) wiz.answers.amount = amtInp.value.trim();
+      if(!wiz.answers.amount){ alert('El monto es obligatorio en QR dinámico.'); return; }
+      var amt = wiz.answers.amount.includes('.') ? wiz.answers.amount : wiz.answers.amount + '.00';
+      wiz.answers.amount = amt;
     }
   }
-  // extraOptional: siempre avanzar (ambos campos son opcionales)
-  // los valores ya se guardan en oninput, no hay nada que validar
+
   wiz.step++;
   renderWizStep();
 }
+
 
 function wizBack(){
   if(wiz.step>0){ wiz.step--; renderWizStep(); }
