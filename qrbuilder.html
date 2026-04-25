@@ -253,6 +253,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
   <button class="tab-btn" onclick="showTab('decode',this)">🔍 Decodificador</button>
   <button class="tab-btn" onclick="showTab('faq',this)">❓ FAQ / IA</button>
   <button class="tab-btn" onclick="showTab('api',this)">&#128268; API Resolve</button>
+  <button class="tab-btn" onclick="showTab('scenarios',this)">&#127914; Escenarios</button>
 </div>
 
 <div id="app"></div>
@@ -269,7 +270,7 @@ function showTab(name,el){
   window.scrollTo(0,0);
   const app=document.getElementById('app');
   app.innerHTML='';
-  ({build:renderBuild,decode:renderDecode,faq:renderFAQ,wizard:renderWizard,api:renderAPI})[name](app);
+  ({build:renderBuild,decode:renderDecode,faq:renderFAQ,wizard:renderWizard,api:renderAPI,scenarios:renderScenarios})[name](app);
 }
 
 // ── UTILS ──
@@ -2788,6 +2789,353 @@ function renderAPI(app){
 
 // ── INIT ──
 showTab('wizard',document.querySelector('.tab-btn'));
+
+// ══════════════════════════════════
+// TAB: ESCENARIOS
+// ══════════════════════════════════
+
+function parseQRForScenarios(raw){
+  // Parsear TLV y extraer campos relevantes
+  raw = (raw||'').trim();
+  var result = {
+    raw: raw,
+    valid: false,
+    initMethod: null,   // '11'=estático, '12'=dinámico
+    usaIEP: null,       // true/false
+    hasAmount: false,
+    amount: null,
+    hasOrderId: false,
+    orderId: null,
+    hasCVU: false,
+    acceptsCard: false,
+    merchantName: null,
+    city: null,
+    mcc: null,
+    domain: null,
+    adminCuit: null,
+    templates: []
+  };
+  if(!raw || raw.length < 10) return result;
+
+  function parseTLV(s){
+    var i=0, out=[];
+    while(i<=s.length-4){
+      var tag=s.substring(i,i+2);
+      var len=parseInt(s.substring(i+2,i+4),10);
+      if(isNaN(len)||i+4+len>s.length) break;
+      out.push({tag:tag,len:len,val:s.substring(i+4,i+4+len)});
+      i+=4+len;
+    }
+    return out;
+  }
+
+  try {
+    var fields = parseTLV(raw);
+    result.valid = fields.length > 2;
+    fields.forEach(function(f){
+      if(f.tag==='01') result.initMethod = f.val;
+      if(f.tag==='52') result.mcc = f.val;
+      if(f.tag==='54'){ result.hasAmount=true; result.amount=f.val; }
+      if(f.tag==='59') result.merchantName = f.val;
+      if(f.tag==='60') result.city = f.val;
+      // Templates 26-49
+      if(parseInt(f.tag)>=26 && parseInt(f.tag)<=49){
+        var subs = parseTLV(f.val);
+        var tmpl = {id:f.tag, domain:'', adminCuit:'', usaIEP:false, acceptsCard:false};
+        subs.forEach(function(s){
+          if(s.tag==='00') tmpl.domain=s.val;
+          if(s.tag==='98') tmpl.adminCuit=s.val;
+          if(s.tag==='99') tmpl.usaIEP=(s.val==='01'||s.val==='1');
+          if(s.tag==='96' && s.val.indexOf('CARD')!==-1) tmpl.acceptsCard=true;
+        });
+        result.templates.push(tmpl);
+        if(tmpl.usaIEP) result.usaIEP=true;
+        if(tmpl.domain) result.domain=tmpl.domain;
+        if(tmpl.adminCuit) result.adminCuit=tmpl.adminCuit;
+      }
+      // Template 51 (CVU)
+      if(f.tag==='51') result.hasCVU=true;
+      // 62.05
+      if(f.tag==='62'){
+        var subs62=parseTLV(f.val);
+        subs62.forEach(function(s){
+          if(s.tag==='05'){ result.hasOrderId=true; result.orderId=s.val; }
+        });
+      }
+    });
+    if(result.usaIEP===null) result.usaIEP=false;
+  } catch(e){ result.valid=false; }
+  return result;
+}
+
+function getScenarioId(q){
+  var dyn = q.initMethod==='12';
+  var iep = q.usaIEP===true;
+  if(!dyn && !iep) return 1;
+  if(!dyn &&  iep) return 2;
+  if( dyn && !iep) return 3;
+  if( dyn &&  iep) return 4;
+  return 0;
+}
+
+var SCENARIOS = {
+  1: {
+    title: 'Est\u00e1tico sin IEP',
+    subtitle: 'QR de mostrador simple',
+    color: '#6366f1',
+    icon: '\uD83C\uDFAA',
+    tags: ['Est\u00e1tico','Sin API Resolve','Monto libre'],
+    desc: 'El mismo QR sirve para m\u00FAltiples pagos. El cliente ingresa el monto en la billetera. No expira. Ideal para imprimir y pegar en el mostrador.',
+    caps: [
+      {icon:'\u2705',label:'Pagos ilimitados con el mismo QR',ok:true},
+      {icon:'\u2705',label:'No requiere backend propio',ok:true},
+      {icon:'\u2705',label:'Funciona sin conectividad del comercio',ok:true},
+      {icon:'\u26a0\ufe0f',label:'El cliente ingresa el monto (riesgo de error)',ok:'warn'},
+      {icon:'\u274c',label:'Sin monto fijo por transacci\u00f3n',ok:false},
+      {icon:'\u274c',label:'Sin trazabilidad (no hay order ID)',ok:false},
+      {icon:'\u274c',label:'Sin carrito de art\u00edculos',ok:false},
+      {icon:'\u274c',label:'Sin devoluciones autom\u00e1ticas',ok:false},
+      {icon:'\u274c',label:'Sin validaci\u00f3n del QR al escanear',ok:false},
+    ],
+    usecases: ['Kiosco','Almac\u00e9n','Feria','Mercado','Peaje','Colecci\u00f3n de fondos'],
+    iep_upgrade: 'Con IEP pod\u00e9s dinamizar el monto en cada escaneo sin cambiar el QR f\u00edsico. El backend puede fijar el precio, cargar un carrito y validar cada transacci\u00f3n.'
+  },
+  2: {
+    title: 'Est\u00e1tico con IEP',
+    subtitle: 'QR inteligente de mostrador',
+    color: '#00d4aa',
+    icon: '\uD83E\uDD16',
+    tags: ['Est\u00e1tico','Con API Resolve','Monto din\u00e1mico por backend'],
+    desc: 'El QR f\u00edsico nunca cambia, pero en cada escaneo la billetera consulta al backend del aceptador. El backend puede fijar el monto, cargar un carrito, validar el QR y hasta rechazarlo si ya fue usado.',
+    caps: [
+      {icon:'\u2705',label:'Pagos ilimitados con el mismo QR',ok:true},
+      {icon:'\u2705',label:'Monto fijado por el backend en cada scan',ok:true},
+      {icon:'\u2705',label:'Carrito de art\u00edculos visible en la billetera',ok:true},
+      {icon:'\u2705',label:'Validaci\u00f3n del QR en tiempo real',ok:true},
+      {icon:'\u2705',label:'Trazabilidad: el backend genera el order ID',ok:true},
+      {icon:'\u2705',label:'Devoluciones posibles (con order ID del backend)',ok:true},
+      {icon:'\u2705',label:'Puede rechazar el QR si est\u00e1 expirado o ya fue pagado',ok:true},
+      {icon:'\u2705',label:'Cambio de precio sin reimprimir el QR',ok:true},
+      {icon:'\u26a0\ufe0f',label:'Requiere backend siempre disponible',ok:'warn'},
+      {icon:'\u26a0\ufe0f',label:'Si el backend cae, el QR no funciona',ok:'warn'},
+    ],
+    usecases: ['Restaurante con men\u00FA cambiante','Mesa con QR fijo','Tur\u00edstico (precio por temporada)','Suscripci\u00f3n mensual','Lockers inteligentes'],
+    iep_upgrade: null
+  },
+  3: {
+    title: 'Din\u00e1mico sin IEP',
+    subtitle: 'QR por transacci\u00f3n autosuficiente',
+    color: '#f59e0b',
+    icon: '\uD83D\uDCB3',
+    tags: ['Din\u00e1mico','Sin API Resolve','Monto fijo en QR'],
+    desc: 'Cada pago genera un QR nuevo con el monto ya embebido. El QR es autosuficiente: contiene el CVU y el order ID. No necesita que el backend del comercio est\u00e9 disponible al momento del escaneo.',
+    caps: [
+      {icon:'\u2705',label:'Monto fijo e inalterable en el QR',ok:true},
+      {icon:'\u2705',label:'CVU embebido (template 51)',ok:true},
+      {icon:'\u2705',label:'Order ID en campo 62.05 para trazabilidad',ok:true},
+      {icon:'\u2705',label:'Devoluciones posibles (con order ID)',ok:true},
+      {icon:'\u2705',label:'Funciona aunque el backend est\u00e9 ca\u00eddo',ok:true},
+      {icon:'\u26a0\ufe0f',label:'Cada transacci\u00f3n requiere generar un QR nuevo',ok:'warn'},
+      {icon:'\u26a0\ufe0f',label:'El QR expira (definido por el aceptador)',ok:'warn'},
+      {icon:'\u274c',label:'Sin carrito de art\u00edculos',ok:false},
+      {icon:'\u274c',label:'Sin validaci\u00f3n al escanear',ok:false},
+    ],
+    usecases: ['E-commerce simple','Cobros por link','Factura con QR','Vending machines','Estacionamiento'],
+    iep_upgrade: 'Con IEP pod\u00e9s agregar carrito de art\u00edculos, validar el QR al escanear y controlar la expiraci\u00f3n desde el backend.'
+  },
+  4: {
+    title: 'Din\u00e1mico con IEP',
+    subtitle: 'QR de m\u00e1xima capacidad',
+    color: '#ec4899',
+    icon: '\uD83D\uDE80',
+    tags: ['Din\u00e1mico','Con API Resolve','Full features'],
+    desc: 'El escenario m\u00e1s completo. Cada transacci\u00f3n genera un QR nuevo. La billetera consulta al backend que puede confirmar monto, devolver el carrito detallado, validar el QR y controlarlo de extremo a extremo.',
+    caps: [
+      {icon:'\u2705',label:'Monto fijo + validado por el backend',ok:true},
+      {icon:'\u2705',label:'Carrito de art\u00edculos detallado visible en la billetera',ok:true},
+      {icon:'\u2705',label:'Trazabilidad completa con order ID',ok:true},
+      {icon:'\u2705',label:'Devoluciones posibles',ok:true},
+      {icon:'\u2705',label:'Validaci\u00f3n y expiraci\u00f3n controlada por el backend',ok:true},
+      {icon:'\u2705',label:'El backend puede modificar el monto al escanear',ok:true},
+      {icon:'\u2705',label:'Identificaci\u00f3n completa del aceptador y administrador',ok:true},
+      {icon:'\u26a0\ufe0f',label:'Requiere backend siempre disponible',ok:'warn'},
+      {icon:'\u26a0\ufe0f',label:'Cada transacci\u00f3n requiere generar un QR nuevo',ok:'warn'},
+      {icon:'\u26a0\ufe0f',label:'Mayor complejidad de integraci\u00f3n',ok:'warn'},
+    ],
+    usecases: ['E-commerce avanzado','POS integrado','Delivery','Supermercado','B2B con orden de compra','Factura electr\u00f3nica con QR'],
+    iep_upgrade: null
+  }
+};
+
+function renderScenarios(app){
+  var h = '';
+  h += '<div class="card">';
+  h += '<div class="card-title">\uD83C\uDFAF Analizador de Escenarios</div>';
+  h += '<div class="alert info"><span>\u2139</span><span>Peg\u00e1 el string EMV de tu QR para ver qu\u00e9 escenarios de pago son compatibles y c\u00f3mo pod\u00e9s extenderlo.</span></div>';
+  h += '<div class="field" style="margin-top:8px"><textarea id="sc-input" rows="4" placeholder="Peg\u00e1 el string EMV aqu\u00ed...00020101021126..." style="font-family:var(--mono);font-size:11px"></textarea></div>';
+
+  // Botón escanear si BarcodeDetector disponible
+  if(window.BarcodeDetector){
+    h += '<div style="display:flex;gap:8px;margin-bottom:12px">';
+    h += '<button class="build-btn" style="flex:1" onclick="analyzeScenario()">&#128270; Analizar escenarios</button>';
+    h += '<button class="build-btn" style="flex:0;background:var(--card);border:1px solid var(--border);color:var(--text);padding:0 16px" onclick="startScenarioScan()">&#128247;</button>';
+    h += '</div>';
+  } else {
+    h += '<button class="build-btn" style="margin-bottom:12px" onclick="analyzeScenario()">&#128270; Analizar escenarios</button>';
+  }
+
+  h += '<div id="sc-scanner" style="display:none;margin-bottom:12px">';
+  h += '<video id="sc-video" autoplay playsinline muted style="width:100%;border-radius:10px;background:#000;max-height:260px"></video>';
+  h += '<div id="sc-scan-status" style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px">Apunt\u00e1 al QR...</div>';
+  h += '<button class="build-btn" style="margin-top:8px;background:var(--card);border:1px solid var(--border);color:var(--text)" onclick="stopScenarioScan()">\u23f9 Detener</button>';
+  h += '</div>';
+
+  h += '</div>';
+  h += '<div id="sc-result"></div>';
+  app.innerHTML = h;
+}
+
+var _scStream = null;
+var _scRaf = null;
+var _scDetector = null;
+
+function startScenarioScan(){
+  var wrapper = document.getElementById('sc-scanner');
+  var v = document.getElementById('sc-video');
+  if(!wrapper||!v) return;
+  if(!window.BarcodeDetector) return;
+  if(!_scDetector) _scDetector = new window.BarcodeDetector({formats:['qr_code']});
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(stream){
+    _scStream = stream;
+    v.srcObject = stream;
+    wrapper.style.display = 'block';
+    v.play();
+    _scanScenarioLoop();
+  }).catch(function(){ alert('No se pudo acceder a la c\u00e1mara'); });
+}
+
+function _scanScenarioLoop(){
+  var v = document.getElementById('sc-video');
+  if(!_scStream||!v||!_scDetector) return;
+  if(v.readyState < 2){ _scRaf = requestAnimationFrame(_scanScenarioLoop); return; }
+  _scDetector.detect(v).then(function(codes){
+    if(!_scStream) return;
+    if(codes && codes.length > 0 && codes[0].rawValue){
+      stopScenarioScan();
+      var inp = document.getElementById('sc-input');
+      if(inp) inp.value = codes[0].rawValue;
+      analyzeScenario();
+    } else {
+      _scRaf = requestAnimationFrame(_scanScenarioLoop);
+    }
+  }).catch(function(){ _scRaf = requestAnimationFrame(_scanScenarioLoop); });
+}
+
+function stopScenarioScan(){
+  if(_scRaf){ cancelAnimationFrame(_scRaf); _scRaf=null; }
+  if(_scStream){ _scStream.getTracks().forEach(function(t){t.stop();}); _scStream=null; }
+  var w = document.getElementById('sc-scanner');
+  if(w) w.style.display='none';
+}
+
+function analyzeScenario(){
+  stopScenarioScan();
+  var raw = (document.getElementById('sc-input')||{}).value||'';
+  raw = raw.trim();
+  var res = document.getElementById('sc-result');
+  if(!res) return;
+  if(!raw){ res.innerHTML='<div class="alert warn"><span>\u26a0\ufe0f</span><span>Peg\u00e1 un string EMV primero.</span></div>'; return; }
+
+  var q = parseQRForScenarios(raw);
+  if(!q.valid){ res.innerHTML='<div class="alert warn"><span>\u26a0\ufe0f</span><span>El string no parece un QR EMV v\u00e1lido. Verific\u00e1 que est\u00e9 completo.</span></div>'; return; }
+
+  var scId = getScenarioId(q);
+  var sc = SCENARIOS[scId];
+  if(!sc){ res.innerHTML='<div class="alert warn"><span>\u26a0\ufe0f</span><span>No se pudo determinar el escenario.</span></div>'; return; }
+
+  var h = '';
+
+  // ── Header del QR ──
+  h += '<div class="card" style="border:2px solid '+sc.color+'">';
+  h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">';
+  h += '<span style="font-size:36px">'+sc.icon+'</span>';
+  h += '<div><div style="font-size:16px;font-weight:800;color:'+sc.color+'">Escenario '+scId+': '+sc.title+'</div>';
+  h += '<div style="font-size:12px;color:var(--muted)">'+sc.subtitle+'</div></div></div>';
+  // Tags
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';
+  sc.tags.forEach(function(t){
+    h += '<span style="background:'+sc.color+'22;border:1px solid '+sc.color+'44;color:'+sc.color+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">'+t+'</span>';
+  });
+  h += '</div>';
+  h += '<p style="font-size:12px;color:var(--muted);line-height:1.7">'+sc.desc+'</p>';
+  h += '</div>';
+
+  // ── Datos del QR detectados ──
+  h += '<div class="card">';
+  h += '<div class="card-title">&#128203; Datos detectados en el QR</div>';
+  var rows = [
+    ['Tipo', q.initMethod==='12'?'Din\u00e1mico (01=12)':'Est\u00e1tico (01=11)'],
+    ['API resolve (99)', q.usaIEP?'S\u00ed usa IEP (99=01)':'No usa IEP (99=00)'],
+    ['Monto (54)', q.hasAmount?'$ '+q.amount:'No embebido'],
+    ['Comercio (59)', q.merchantName||'\u2014'],
+    ['Ciudad (60)', q.city||'\u2014'],
+    ['MCC (52)', q.mcc||'\u2014'],
+    ['Dominio', q.domain||'\u2014'],
+    ['CUIT Admin (98)', q.adminCuit||'\u2014'],
+    ['CVU embebido (51)', q.hasCVU?'S\u00ed':'No'],
+    ['Order ID (62.05)', q.hasOrderId?q.orderId:'No presente'],
+  ];
+  h += '<div style="display:flex;flex-direction:column;gap:0">';
+  rows.forEach(function(r,i){
+    h += '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">';
+    h += '<span style="font-size:11px;color:var(--muted)">'+r[0]+'</span>';
+    h += '<span style="font-size:11px;color:var(--text);font-weight:500;text-align:right;max-width:60%;word-break:break-all">'+esc(r[1])+'</span>';
+    h += '</div>';
+  });
+  h += '</div></div>';
+
+  // ── Capacidades ──
+  h += '<div class="card">';
+  h += '<div class="card-title">&#9889; Capacidades de este QR</div>';
+  sc.caps.forEach(function(cap){
+    var bg = cap.ok===true?'#00d4aa0f':cap.ok==='warn'?'#f59e0b0f':'#ef44440f';
+    var border = cap.ok===true?'#00d4aa22':cap.ok==='warn'?'#f59e0b22':'#ef444422';
+    h += '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid '+border+';background:'+bg+';margin-bottom:6px">';
+    h += '<span style="font-size:16px;flex-shrink:0">'+cap.icon+'</span>';
+    h += '<span style="font-size:12px;color:var(--text);line-height:1.5">'+cap.label+'</span>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // ── IEP upgrade si aplica ──
+  if(sc.iep_upgrade){
+    h += '<div class="card" style="border:1px solid #00d4aa44;background:#00d4aa08">';
+    h += '<div class="card-title" style="color:var(--accent)">\uD83D\uDE80 C\u00f3mo extenderlo con API resolve</div>';
+    h += '<p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">'+sc.iep_upgrade+'</p>';
+    // Mostrar capacidades que se ganan
+    var gained = SCENARIOS[scId===1?2:4];
+    if(gained){
+      h += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Lo que ganar\u00edas:</div>';
+      gained.caps.filter(function(c){return c.ok===true;}).slice(0,5).forEach(function(cap){
+        h += '<div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">';
+        h += '<span>\u2705</span><span style="font-size:12px;color:var(--muted)">'+cap.label+'</span></div>';
+      });
+    }
+    h += '</div>';
+  }
+
+  // ── Casos de uso ──
+  h += '<div class="card">';
+  h += '<div class="card-title">&#127970; Casos de uso ideales</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+  sc.usecases.forEach(function(u){
+    h += '<span style="background:var(--bg);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--text)">'+u+'</span>';
+  });
+  h += '</div></div>';
+
+  res.innerHTML = h;
+}
+
 </script>
 </body>
 </html>
