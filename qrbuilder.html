@@ -240,7 +240,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
 <body>
 <header>
   <div>
-    <span class="logo-badge">NEWPAY · PCT v0.16</span>
+    <span class="logo-badge">NEWPAY · PCT v0.20</span>
     <span class="logo-badge2">CIMPRA 525/530/535/540</span>
   </div>
   <h1>QR Builder<br><span>Transferencias 3.0</span></h1>
@@ -249,11 +249,11 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
 
 <div class="tabs-nav">
   <button class="tab-btn active" onclick="showTab('wizard',this)">🧭 Guided</button>
-  <button class="tab-btn" onclick="showTab('build',this)">🔨 Constructor</button>
-  <button class="tab-btn" onclick="showTab('decode',this)">🔍 Decodificador</button>
-  <button class="tab-btn" onclick="showTab('faq',this)">❓ FAQ / IA</button>
+  <button class="tab-btn" onclick="showTab('build',this)">🔨 Builder</button>
+  <button class="tab-btn" onclick="showTab('decode',this)">🔍 Parser</button>
   <button class="tab-btn" onclick="showTab('api',this)">&#128268; API Resolve</button>
-  <button class="tab-btn" onclick="showTab('scenarios',this)">&#127919; Escenarios</button>
+  <button class="tab-btn" onclick="showTab('scenarios',this)">&#127919; Scenarios</button>
+  <button class="tab-btn" onclick="showTab('faq',this)">❓ FAQ / IA</button>
 </div>
 
 <div id="app"></div>
@@ -2341,7 +2341,7 @@ function renderFAQ(app){
   var iaSection = '<div class="card" style="margin-top:4px">';
   iaSection += '<div class="card-title">&#129302; Asistente IA — NotebookLM</div>';
   iaSection += '<p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">';
-  iaSection += 'El asistente tiene cargados los documentos oficiales: <strong style="color:var(--text)">EMV® QRCPS v1.0</strong> y <strong style="color:var(--text)">CIMPRA 525, 530, 535 y 540</strong>. ';
+  iaSection += 'El asistente tiene cargados los documentos oficiales: <strong style="color:var(--text)">CIMPRA 525, 530, 535 y 540</strong>. ';
   iaSection += 'Podes hacerle preguntas tecnicas y responde citando la fuente y el numero de seccion.</p>';
   iaSection += '<a href="'+notebookURL+'" target="_blank" rel="noopener noreferrer" ';
   iaSection += 'style="display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(135deg,#4285f4,#1a73e8);';
