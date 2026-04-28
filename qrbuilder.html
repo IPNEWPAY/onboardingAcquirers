@@ -176,7 +176,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
   padding:13px 8px;font-size:12px;cursor:pointer;font-family:var(--sans);
   text-decoration:underline;white-space:nowrap}
 
-/* Preview EMV */
+/* Preview EMV® */
 .wiz-preview{background:#0d1625;border:1px solid var(--border);border-radius:10px;
   padding:12px;margin-bottom:14px}
 .wiz-preview-title{font-size:10px;font-weight:600;color:var(--muted);
@@ -244,7 +244,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
     <span class="logo-badge2">CIMPRA 525/530/535/540</span>
   </div>
   <h1>QR Builder<br><span>Transferencias 3.0</span></h1>
-  <p class="subtitle">Constructor según EMV QRCPS + Boletines CIMPRA BCRA Argentina</p>
+  <p class="subtitle">Constructor según EMV® QRCPS + Boletines CIMPRA BCRA Argentina</p>
 </header>
 
 <div class="tabs-nav">
@@ -310,7 +310,7 @@ function renderQRWithLogo(canvasId, text){
     try {
       new QRCode(el, {text:text, width:220, height:220, colorDark:'#000', colorLight:'#fff', correctLevel:QRCode.CorrectLevel.L});
     } catch(e2) {
-      el.innerHTML = '<p style="color:var(--err);font-size:11px;padding:10px">El QR es demasiado largo para generar imagen. Usá el string EMV directamente.</p>';
+      el.innerHTML = '<p style="color:var(--err);font-size:11px;padding:10px">El QR es demasiado largo para generar imagen. Usá el string EMV® directamente.</p>';
       return;
     }
   }
@@ -573,7 +573,7 @@ function rebuildBuildHTML(app){
   const isDyn = s.initMethod==='12';
 
   app.innerHTML = `
-  <div class="alert info"><span>ℹ️</span><span>Constructor según <strong>EMV QRCPS v1.0</strong> + CIMPRA <strong>525, 530 y 535</strong>. El CRC16 se calcula automáticamente.</span></div>
+  <div class="alert info"><span>ℹ️</span><span>Constructor según <strong>EMV® QRCPS v1.0</strong> + CIMPRA <strong>525, 530 y 535</strong>. El CRC16 se calcula automáticamente.</span></div>
 
   <!-- ── 00/01 ENCABEZADO ── -->
   <div class="card">
@@ -1048,7 +1048,7 @@ function doBuild(){
   // CRC
   s+='6304'+crc16(s+'6304');
 
-  if(s.length>512) document.getElementById('build-err').innerHTML='⚠️ El payload supera 512 chars ('+s.length+'). Según EMV spec §4.1 es recomendable no excederlo.';
+  if(s.length>512) document.getElementById('build-err').innerHTML='⚠️ El payload supera 512 chars ('+s.length+'). Según EMV® spec §4.1 es recomendable no excederlo.';
 
   document.getElementById('build-result').innerHTML=`
     <div class="card" style="margin-top:12px">
@@ -1087,7 +1087,7 @@ function doBuild(){
 function renderDecode(app){
   app.innerHTML=`
   <div class="card">
-    <div class="card-title">🔍 Decodificar QR EMV Argentina</div>
+    <div class="card-title">🔍 Decodificar QR EMV® Argentina</div>
     <button class="scan-btn" id="scan-toggle-btn" onclick="toggleScanner()"><span>📷</span> Escanear con cámara</button>
     <div id="scanner-wrapper">
       <video id="scanner-video" autoplay playsinline muted></video>
@@ -1104,9 +1104,9 @@ function renderDecode(app){
 
   <div class="card" style="margin-top:0">
     <div class="card-title"><span class="etag">ID 63</span> Calculadora CRC16-CCITT</div>
-    <div class="alert info"><span>&#8505;&#65039;</span><span>El CRC cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 digitos del valor final (EMV spec 4.7.3).</span></div>
+    <div class="alert info"><span>&#8505;&#65039;</span><span>El CRC cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 digitos del valor final (EMV® spec 4.7.3).</span></div>
     <div class="field" style="margin-top:4px">
-      <label>String EMV hasta ...6304 inclusive</label>
+      <label>String EMV® hasta ...6304 inclusive</label>
       <textarea id="crc-input" rows="4" placeholder="Pega el string hasta ...6304 (inclusive)"></textarea>
     </div>
     <button class="build-btn" onclick="doCalcCRC()">Calcular CRC16</button>
@@ -1195,7 +1195,7 @@ function parseTLV(s,desc,depth=0){
 function renderDecodeResult(raw){
   const out=document.getElementById('decode-result');
   const rows=parseTLV(raw,FDESC);
-  if(!rows.length){out.innerHTML='<div class="card"><p style="color:var(--err)">No se pudo decodificar. Verificá que sea un string EMV válido.</p></div>';return}
+  if(!rows.length){out.innerHTML='<div class="card"><p style="color:var(--err)">No se pudo decodificar. Verificá que sea un string EMV® válido.</p></div>';return}
 
   // Detectar características CIMPRA
   const hints=[];
@@ -1285,9 +1285,9 @@ function renderCRC(app){
   app.innerHTML=`
   <div class="card">
     <div class="card-title"><span class="etag">ID 63</span> CRC16-CCITT (XMODEM)</div>
-    <div class="alert info"><span>ℹ️</span><span>Cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 dígitos del valor final (EMV spec §4.7.3).</span></div>
+    <div class="alert info"><span>ℹ️</span><span>Cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 dígitos del valor final (EMV® spec §4.7.3).</span></div>
     <div class="field" style="margin-top:4px">
-      <label>String EMV hasta <code style="font-family:var(--mono);font-size:11px">...6304</code> inclusive</label>
+      <label>String EMV® hasta <code style="font-family:var(--mono);font-size:11px">...6304</code> inclusive</label>
       <textarea id="crc-input" rows="5" placeholder="Pegá el string hasta ...6304 (inclusive)"></textarea>
     </div>
     <button class="build-btn" onclick="doCalcCRC()">Calcular CRC16</button>
@@ -1325,14 +1325,14 @@ function renderGuide(app){
   <div class="card">
     <div class="card-title">Marco normativo – Transferencias 3.0 Argentina</div>
     <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:8px">
-      El QR para pagos con transferencia en Argentina se basa en <strong style="color:var(--text)">EMV QRCPS v1.0 (Merchant-Presented Mode)</strong> como estándar base, 
+      El QR para pagos con transferencia en Argentina se basa en <strong style="color:var(--text)">EMV® QRCPS v1.0 (Merchant-Presented Mode)</strong> como estándar base, 
       complementado por los <strong style="color:var(--text)">Boletines CIMPRA</strong> que definen las reglas operativas específicas del ecosistema argentino.
     </p>
     <table class="emv-table">
       <thead><tr><th>Documento</th><th>Tema principal</th></tr></thead>
       <tbody>
         <tr>
-          <td><a href="https://www.emvco.com/emv-technologies/qrcodes/" target="_blank" style="color:var(--accent2);text-decoration:none">EMV QRCPS v1.0 ↗</a></td>
+          <td><a href="https://www.emvco.com/emv-technologies/qrcodes/" target="_blank" style="color:var(--accent2);text-decoration:none">EMV® QRCPS v1.0 ↗</a></td>
           <td>Estructura TLV, campos raíz 00-99, CRC16-CCITT, templates anidados</td>
         </tr>
         <tr>
@@ -1367,7 +1367,7 @@ function renderGuide(app){
         <tr><td style="color:var(--warn)">97</td><td><em>Solo tarjeta:</em> MAX_BINS_ALLOWED — "01"=1 bin (usuario elige medio), "02"-"99"=N bines</td><td><span class="pill cimpra">CIMPRA 540</span></td></tr>
         <tr><td>98</td><td>CUIT del administrador del esquema, 11 dígitos sin separadores</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
         <tr><td>99</td><td>Usa API resolve: "0"=no usa, "1"=usa (por defecto todos usan)</td><td><span class="pill cimpra">CIMPRA 530</span></td></tr>
-        <tr><td>01-97</td><td>Libres según esquema del aceptador</td><td>EMV / aceptador</td></tr>
+        <tr><td>01-97</td><td>Libres según esquema del aceptador</td><td>EMV® / aceptador</td></tr>
       </tbody>
     </table>
     <div class="code-sample" style="margin-top:10px">
@@ -1462,7 +1462,7 @@ function renderAI(app){
     <div class="card-title">🤖 Asistente IA — Transferencias 3.0</div>
     <div class="alert info"><span>ℹ️</span><span>
       El asistente está entrenado sobre los documentos oficiales del ecosistema:
-      <strong>EMV QRCPS v1.0</strong>, <strong>CIMPRA 525, 530, 535 y 540</strong>.
+      <strong>EMV® QRCPS v1.0</strong>, <strong>CIMPRA 525, 530, 535 y 540</strong>.
       Podés hacerle preguntas técnicas en lenguaje natural y te responde citando las fuentes.
     </span></div>
     <div style="background:#0d1625;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
@@ -1491,7 +1491,7 @@ function renderAI(app){
       <p style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em">Documentos cargados en el asistente</p>
       <div style="display:flex;flex-direction:column;gap:6px">
         ${[
-          {name:'EMV QRCPS v1.0 — Merchant-Presented Mode',src:'EMVCo',color:'var(--accent2)'},
+          {name:'EMV® QRCPS v1.0 — Merchant-Presented Mode',src:'EMVCo',color:'var(--accent2)'},
           {name:'CIMPRA 525 — Primera IEP: dominio invertido y flujos',src:'BCRA',color:'#c084fc'},
           {name:'CIMPRA 530 — CUIT admin, API resolve, MCC, campo 61',src:'BCRA',color:'#c084fc'},
           {name:'CIMPRA 535 — QR con tarjeta de crédito, brands, templates 80+',src:'BCRA',color:'var(--warn)'},
@@ -1531,7 +1531,7 @@ function renderAI(app){
     <div style="display:flex;flex-direction:column;gap:8px">
       ${[
         {icon:'🎯',tip:'Sé específico con el contexto: mencioná si es QR estático o dinámico, si es PCT o tarjeta'},
-        {icon:'📋',tip:'Podés pegar un string EMV y preguntarle qué significa cada campo'},
+        {icon:'📋',tip:'Podés pegar un string EMV® y preguntarle qué significa cada campo'},
         {icon:'🔗',tip:'Preguntale por el número de sección del CIMPRA para ir directo a la fuente'},
         {icon:'⚠️',tip:'Para dudas sobre tarjeta de crédito, aclaralo: usa CIMPRA 535/540 que son opcionales para PCT'},
       ].map(t=>`
@@ -1556,7 +1556,7 @@ function renderWizard(app){
     h+='<div style="text-align:center;padding:24px 0 16px">';
     h+='<div style="font-size:44px;margin-bottom:10px">&#129517;</div>';
     h+='<div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px">¿Qué querés hacer?</div>';
-    h+='<div style="font-size:13px;color:var(--muted)">Elegí cómo queremos ayudarte</div></div>';
+    h+='<div style="font-size:13px;color:var(--muted)">Elegí cómo querés que te ayudemos</div></div>';
     h+='<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px">';
     h+='<div id="btn-biz" data-mode="biz" class="guided-opt" style="cursor:pointer;border:2px solid var(--border);border-radius:14px;padding:20px 18px;background:var(--card)">';
     h+='<div style="display:flex;align-items:center;gap:14px"><span style="font-size:32px">&#127919;</span><div>';
@@ -1644,7 +1644,7 @@ function getSteps(){
       q:'¿Cómo vas a usar este QR?',
       hint:'El QR estático es ideal para imprimir. El dinámico se genera por transacción y puede incluir monto fijo.',
       options:[
-        {value:'11',title:'QR Estático',desc:'El mismo QR para múltiples pagos. Ideal para imprimir y pegar. El cliente ingresa el monto.'},
+        {value:'11',title:'QR Estático',desc:'QR único de uso controlado. Ideal para imprimir. Sin API resolve: el QR se quema al primer pago (1 cobro por QR). Con API resolve: el backend genera un order.id nuevo en cada escaneo y el QR se vuelve reutilizable ilimitadamente.'},
         {value:'12',title:'QR Dinámico',desc:'Un QR por transacción. Incluye el monto fijo. Requiere sistema que lo genere.'},
       ]
     },
@@ -1696,7 +1696,7 @@ function renderWizStep(){
     if(i<to-1) prog += `<div class="wiz-line ${i<step?'done':''}"></div>`;
   }
 
-  // Preview EMV
+  // Preview EMV®
   const prev = buildWizEMV(true);
 
   // Contenido del paso
@@ -1837,7 +1837,7 @@ function renderWizStep(){
     <div class="wiz-progress">${prog}</div>
 
     <div class="wiz-preview">
-      <div class="wiz-preview-title">String EMV construido hasta acá</div>
+      <div class="wiz-preview-title">String EMV® construido hasta acá</div>
       <div class="wiz-tokens">${prev||'<span style="color:var(--border)">Se irá construyendo con cada respuesta…</span>'}</div>
     </div>
 
@@ -2024,7 +2024,7 @@ function renderWizFinal(){
   h += '<div class="wiz-final">';
   h += '<div style="font-size:32px;margin-bottom:6px">&#127881;</div>';
   h += '<div style="font-size:18px;font-weight:800;color:var(--accent);margin-bottom:4px">&#161;Tu QR est&#225; listo!</div>';
-  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Construido seg&#250;n EMV QRCPS + CIMPRA 525/530</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Construido seg&#250;n EMV® QRCPS + CIMPRA 525/530</div>';
   h += '<div class="wiz-final-qr"><div id="wiz-qr-canvas" style="background:#fff;padding:10px;border-radius:8px;box-shadow:0 0 0 1px var(--border),0 0 40px rgba(0,212,170,.1);position:relative;display:inline-block"></div></div>';
 
   // Resumen
@@ -2036,9 +2036,9 @@ function renderWizFinal(){
   }
   h += '</div>';
 
-  // String EMV
+  // String EMV®
   h += '<div style="background:#0d1625;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:10px;color:var(--accent);word-break:break-all;line-height:1.9;margin-bottom:14px">';
-  h += '<p style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">String EMV completo con CRC</p>';
+  h += '<p style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">String EMV® completo con CRC</p>';
   h += esc(emvStr);
   h += '</div>';
 
@@ -2075,7 +2075,7 @@ const FAQ_DATA = [
     section: '📋 Encabezado (ID 00–01)',
     items: [
       {q:'¿Qué es el Payload Format Indicator (ID 00)?',
-       a:'Es el primer campo obligatorio del QR. Siempre tiene el valor <code>01</code> e indica que el QR sigue el formato EMV QRCPS v1.0. No se puede omitir ni cambiar.'},
+       a:'Es el primer campo obligatorio del QR. Siempre tiene el valor <code>01</code> e indica que el QR sigue el formato EMV® QRCPS v1.0. No se puede omitir ni cambiar.'},
       {q:'¿Qué diferencia hay entre QR estático (01=11) y QR dinámico (01=12)?',
        a:'El QR <strong>estático</strong> es el mismo para múltiples transacciones — el cliente ingresa el monto en su billetera. El QR <strong>dinámico</strong> se genera por transacción e incluye el monto fijo; requiere un sistema que lo genere cada vez. En QR dinámico, el campo 54 (monto) y el 61 (código postal) son obligatorios según CIMPRA 530.'},
       {q:'¿Es obligatorio incluir el campo 01 (Point of Initiation)?',
@@ -2118,7 +2118,7 @@ const FAQ_DATA = [
       {q:'¿Qué código de moneda debo usar?',
        a:'Para pesos argentinos usá <code>032</code> (ISO 4217). Para dólares <code>840</code>. El campo 53 es obligatorio.'},
       {q:'¿El monto es obligatorio?',
-       a:'Depende del tipo de QR. En QR <strong>estático</strong> (01=11) el monto es opcional — el cliente lo ingresa. En QR <strong>dinámico</strong> (01=12) el monto es obligatorio según EMV y CIMPRA 530.'},
+       a:'Depende del tipo de QR. En QR <strong>estático</strong> (01=11) el monto es opcional — el cliente lo ingresa. En QR <strong>dinámico</strong> (01=12) el monto es obligatorio según EMV® y CIMPRA 530.'},
       {q:'¿Qué formato debe tener el monto?',
        a:'Solo dígitos y un punto decimal. Válidos: <code>1500.00</code>, <code>99.50</code>, <code>1500</code>. Inválidos: <code>1.500,00</code> (coma), <code>1 500</code> (espacio). El separador decimal es siempre el punto.'},
       {q:'¿Para qué sirve el código postal (ID 61) y por qué a veces es obligatorio?',
@@ -2135,7 +2135,7 @@ const FAQ_DATA = [
       {q:'¿Qué campos del 62 define CIMPRA 530?',
        a:'<strong>62.03</strong> = Point of Sale (nombre o código de la sucursal). <strong>62.05</strong> = ID único del QR (importante para rastreo y devoluciones). <strong>62.07</strong> = Device POS (identificador del dispositivo). <strong>62.08</strong> = Tipo de compra, donde <code>00</code> = compra normal. <strong>62.10</strong> = CUIT del comercio. <strong>62.11</strong> = Número de sucursal.'},
       {q:'¿Qué significa el valor "***" en un campo del template 62?',
-       a:'El valor <code>***</code> es una convención EMV que indica que la <strong>billetera del consumidor debe solicitar ese dato al usuario</strong>. Por ejemplo, <code>62.01</code> con valor <code>***</code> le pide al cliente que ingrese el número de factura antes de confirmar el pago.'},
+       a:'El valor <code>***</code> es una convención EMV® que indica que la <strong>billetera del consumidor debe solicitar ese dato al usuario</strong>. Por ejemplo, <code>62.01</code> con valor <code>***</code> le pide al cliente que ingrese el número de factura antes de confirmar el pago.'},
       {q:'¿El ID del QR (62.05) debe ser único?',
        a:'Sí. El campo 62.05 debe contener un identificador único por QR generado, especialmente en QR dinámico. Es clave para la trazabilidad y para gestionar devoluciones parciales (CIMPRA 530).'},
     ]
@@ -2146,7 +2146,7 @@ const FAQ_DATA = [
       {q:'¿Para qué se usan los Unreserved Templates?',
        a:'Los templates de ID 80 a 99 son de uso libre. Cualquier parte (aceptador, billetera, procesador) puede definir su propio template con datos propietarios, siempre que incluya un GUID en el subcampo 00 que identifique el esquema. CIMPRA 535 los usa para datos de tarjeta de crédito sin IEP.'},
       {q:'¿Siempre debo incluir un GUID en el subcampo 00?',
-       a:'Sí, es obligatorio según EMV spec. El GUID puede ser un AID, un UUID sin guiones, o un dominio invertido. Identifica el contexto de los datos que le siguen dentro del template.'},
+       a:'Sí, es obligatorio según EMV® spec. El GUID puede ser un AID, un UUID sin guiones, o un dominio invertido. Identifica el contexto de los datos que le siguen dentro del template.'},
     ]
   },
   {
@@ -2159,10 +2159,43 @@ const FAQ_DATA = [
       {q:'¿Qué es un TLV?',
        a:'Tag-Length-Value. Cada campo del QR tiene 3 partes: <strong>ID</strong> (2 dígitos, ej: <code>59</code>), <strong>longitud</strong> (2 dígitos, ej: <code>14</code>), y <strong>valor</strong> (N chars, ej: <code>MI COMERCIO SRL</code>). Concatenados dan: <code>591414MI COMERCIO SRL</code>.'},
       {q:'¿El payload del QR tiene un límite de tamaño?',
-       a:'EMV spec recomienda no superar 512 caracteres alfanuméricos. Más allá de ese límite el QR se vuelve más denso y difícil de escanear con cámaras de baja resolución. Esta app te avisa si tu QR supera ese límite.'},
+       a:'EMV® spec recomienda no superar 512 caracteres alfanuméricos. Más allá de ese límite el QR se vuelve más denso y difícil de escanear con cámaras de baja resolución. Esta app te avisa si tu QR supera ese límite.'},
     ]
   },
-];
+,
+  {
+    section: '&#128268; API Resolve / IEP',
+    items: [
+      {
+        q: '¿Qué es el API resolve (IEP)?',
+        a: 'Es el mecanismo por el cual la billetera consulta al backend del aceptador antes de mostrar la pantalla de pago. El QR contiene el subcampo 99=01 que indica que existe un endpoint /resolve. Cuando la billetera escanea el QR, hace un GET a ese endpoint y el aceptador responde con el monto, order.id, datos del carrito y otros datos dinámicos. Definido en CIMPRA 525/530.'
+      },
+      {
+        q: '¿Qué devuelve el /resolve del aceptador?',
+        a: '<strong>status</strong>: open_amount (monto libre) o closed_amount (monto fijo).<br><strong>order.id</strong>: el identificador único de esta transacción generado por el backend. Este es el QR ID (qr_id) que la billetera usará como intención de pago.<br><strong>order.items</strong>: listado de artículos del pedido (si el aceptador los devuelve y la billetera decide mostrarlos).<br><strong>total_amount</strong>: monto total si es closed_amount.<br><strong>payment_methods_allowed</strong>: métodos habilitados (PCT, tarjeta).<br><strong>collector</strong>: datos del aceptador (CVU, CUIT, MCC, nombre).'
+      },
+      {
+        q: '¿Qué es el order.id y por qué es clave?',
+        a: 'El order.id es el identificador único de cada intención de pago. Sin API resolve, viene fijo en el campo 62.05 del QR y se quema al procesarse (el QR solo sirve para un pago). Con API resolve, el backend genera un order.id nuevo en cada llamada al /resolve, lo que hace que el mismo QR físico sea reutilizable ilimitadamente. Además, el order.id es el dato que identifica la transacción para poder hacer devoluciones.'
+      },
+      {
+        q: '¿La billetera siempre muestra el carrito de artículos?',
+        a: 'No necesariamente. El aceptador puede devolver order.items en el /resolve, pero es la billetera quien decide si los muestra al usuario. No todas las billeteras implementan la visualización del carrito. Consultá con tu aceptador o la billetera destino si esta funcionalidad está disponible en el flujo específico.'
+      },
+      {
+        q: '¿Un QR estático puede tener múltiples pagos?',
+        a: 'Depende. <strong>Sin API resolve (99=00)</strong>: el QR tiene un order.id fijo en el campo 62.05 que se quema al primer pago — un único cobro por QR. <strong>Con API resolve (99=01)</strong>: el backend genera un order.id diferente en cada escaneo, el campo 62.05 no es necesario en el QR y el mismo código físico impreso puede usarse ilimitadas veces.'
+      },
+      {
+        q: '¿Qué pasa si el backend del aceptador no está disponible y el QR usa API resolve?',
+        a: 'Si el QR tiene 99=01 y el backend no responde, la billetera no puede completar el /resolve y el pago falla. El QR queda inutilizable mientras el backend esté caído. Por eso los QR con IEP requieren alta disponibilidad del backend. Los QR sin IEP (99=00) son autosuficientes y funcionan aunque el aceptador no esté disponible.'
+      },
+      {
+        q: '¿El aceptador soporta devoluciones?',
+        a: 'Las devoluciones son posibles en todos los escenarios, siempre que exista un order.id que identifique la transacción original. <strong>Sin IEP</strong>: el order.id es el valor del campo 62.05 del QR. <strong>Con IEP</strong>: el order.id lo devuelve el backend en el /resolve. La implementación concreta de la devolución depende del aceptador y su integración con el esquema de pagos.'
+      },
+    ]
+  }];
 
 function renderFAQ(app){
   const notebookURL = 'NOTEBOOKLM_URL_AQUI';
@@ -2174,14 +2207,14 @@ function renderFAQ(app){
     <div class="card">
       <div class="card-title">Marco normativo – Transferencias 3.0 Argentina</div>
       <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:8px">
-        El QR para pagos con transferencia en Argentina se basa en <strong style="color:var(--text)">EMV QRCPS v1.0 (Merchant-Presented Mode)</strong> como estándar base, 
+        El QR para pagos con transferencia en Argentina se basa en <strong style="color:var(--text)">EMV® QRCPS v1.0 (Merchant-Presented Mode)</strong> como estándar base, 
         complementado por los <strong style="color:var(--text)">Boletines CIMPRA</strong> que definen las reglas operativas específicas del ecosistema argentino.
       </p>
       <table class="emv-table">
         <thead><tr><th>Documento</th><th>Tema principal</th></tr></thead>
         <tbody>
           <tr>
-            <td><a href="https://www.emvco.com/emv-technologies/qrcodes/" target="_blank" style="color:var(--accent2);text-decoration:none">EMV QRCPS v1.0 ↗</a></td>
+            <td><a href="https://www.emvco.com/emv-technologies/qrcodes/" target="_blank" style="color:var(--accent2);text-decoration:none">EMV® QRCPS v1.0 ↗</a></td>
             <td>Estructura TLV, campos raíz 00-99, CRC16-CCITT, templates anidados</td>
           </tr>
           <tr>
@@ -2308,7 +2341,7 @@ function renderFAQ(app){
   var iaSection = '<div class="card" style="margin-top:4px">';
   iaSection += '<div class="card-title">&#129302; Asistente IA — NotebookLM</div>';
   iaSection += '<p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">';
-  iaSection += 'El asistente tiene cargados los documentos oficiales: <strong style="color:var(--text)">EMV QRCPS v1.0</strong> y <strong style="color:var(--text)">CIMPRA 525, 530, 535 y 540</strong>. ';
+  iaSection += 'El asistente tiene cargados los documentos oficiales: <strong style="color:var(--text)">EMV® QRCPS v1.0</strong> y <strong style="color:var(--text)">CIMPRA 525, 530, 535 y 540</strong>. ';
   iaSection += 'Podes hacerle preguntas tecnicas y responde citando la fuente y el numero de seccion.</p>';
   iaSection += '<a href="'+notebookURL+'" target="_blank" rel="noopener noreferrer" ';
   iaSection += 'style="display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(135deg,#4285f4,#1a73e8);';
@@ -2319,7 +2352,7 @@ function renderFAQ(app){
   iaSection += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">&#128161; Tips para mejores respuestas</div>';
   var tips = [
     ['&#127919;','Menciona si es QR estatico o dinamico y si es para PCT (dinero en cuenta) o tarjeta'],
-    ['&#128203;','Podes pegar un string EMV completo y preguntarle que significa cada campo'],
+    ['&#128203;','Podes pegar un string EMV® completo y preguntarle que significa cada campo'],
     ['&#128279;','Preguntale por el numero de seccion del CIMPRA para ir directo a la fuente'],
     ['&#9888;&#65039;','Para tarjeta de credito aclara CIMPRA 535/540 — son opcionales para PCT'],
   ];
@@ -2381,7 +2414,7 @@ function renderAPI(app){
   var pasos=[
     ['1','Escaneo del QR','La billetera lee el QR y extrae el dominio invertido del subcampo 00 (ej: ar.com.modo). Verifica subcampo 99: si es 1 usa IEP, si es 0 va directo a planes.'],
     ['2','Lookup en tabla de resolucion','La billetera busca el dominio invertido en su tabla local (refreshed minimo 1 vez al dia). Obtiene la URL base de la API del aceptador.'],
-    ['3','GET /resolve','La billetera llama a la URL con access_token y data (el QR string completo). La respuesta trae estado, datos del colector y metodos de pago permitidos.'],
+    ['3','GET /resolve','La billetera llama a la URL con access_token y el QR string. La respuesta del aceptador incluye: <strong>order.id</strong> (el identificador único de la intención de pago, usado como qr_id por la billetera), estado (open/closed_amount), datos del colector, monto y métodos de pago permitidos. Si el aceptador devuelve order.items, la billetera puede mostrar el carrito al usuario.'],
     ['4','Confirmacion del pagador','La billetera muestra los datos al pagador: nombre comercio, monto (si es closed_amount), metodos de pago. El pagador confirma.'],
     ['5','Obtencion de planes y pago','Si acepta tarjeta: PATCH /orders/{order_id}/plans. Luego POST /orders/{order_id}/payments con la intencion de pago.'],
   ];
@@ -2404,7 +2437,7 @@ function renderAPI(app){
   h+='<div style="background:#0d1625;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:11px;color:var(--accent);word-break:break-all;margin-bottom:6px">';
   h+='/resolve?access_token={access_token}&amp;data={qr_string_completo}';
   h+='</div>';
-  h+='<p style="font-size:11px;color:var(--muted);margin-bottom:12px">La URL base se obtiene de la tabla de resolucion. El <code style="font-family:var(--mono);color:var(--accent2)">data</code> es el string EMV raw concatenado como query param. El <code style="font-family:var(--mono);color:var(--accent2)">access_token</code> identifica a la billetera ante el aceptador.</p>';
+  h+='<p style="font-size:11px;color:var(--muted);margin-bottom:12px">La URL base se obtiene de la tabla de resolucion. El <code style="font-family:var(--mono);color:var(--accent2)">data</code> es el string EMV® raw concatenado como query param. El <code style="font-family:var(--mono);color:var(--accent2)">access_token</code> identifica a la billetera ante el aceptador.</p>';
 
   h+='<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px">Query params</div>';
   h+='<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px">';
@@ -2415,7 +2448,7 @@ function renderAPI(app){
   h+='</tr></thead><tbody>';
   var reqParams=[
     ['access_token','<span class="pill req">SI</span>','Token de identificacion entre la billetera y el aceptador. Identifica quien realiza la lectura del QR.'],
-    ['data','<span class="pill req">SI</span>','El string EMV completo (raw) tal como se obtuvo del escaneo del QR. Se concatena a la URL.'],
+    ['data','<span class="pill req">SI</span>','El string EMV® completo (raw) tal como se obtuvo del escaneo del QR. Se concatena a la URL.'],
     ['elapsed_time','<span class="pill opt">NO</span>','Tiempo en milisegundos desde que se escaneo el QR por primera vez.'],
     ['attempt','<span class="pill opt">NO</span>','Cantidad de reintentos de resolver el pago.'],
   ];
@@ -2525,9 +2558,9 @@ function renderAPI(app){
   h+='<div class="alert warn" style="margin-top:8px"><span>&#9888;&#65039;</span><span>Solo existen estos dos valores para el campo <code style="font-family:var(--mono)">status</code> en el GET /resolve (CIMPRA 525/540). Estados como "pending", "closed", "expired" corresponden al ciclo de vida del pago en otras APIs.</span></div>';
   h+='</div>';
 
-  // TAMANIOS DE CAMPOS (del EMV spec y CIMPRA)
+  // TAMANIOS DE CAMPOS (del EMV® spec y CIMPRA)
   h+='<div class="card"><div class="card-title">&#128207; Limites de tamaño de campos relevantes</div>';
-  h+='<div class="alert info" style="margin-bottom:12px"><span>&#8505;</span><span>Extraidos del EMV QRCPS v1.0 (Tabla 3.6) y los boletines CIMPRA. Aplican tanto para construir el QR como para interpretar la respuesta del /resolve.</span></div>';
+  h+='<div class="alert info" style="margin-bottom:12px"><span>&#8505;</span><span>Extraidos del EMV® QRCPS v1.0 (Tabla 3.6) y los boletines CIMPRA. Aplican tanto para construir el QR como para interpretar la respuesta del /resolve.</span></div>';
   h+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
   h+='<thead><tr style="background:#0d1625">';
   h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Campo / ID QR</th>';
@@ -2536,7 +2569,7 @@ function renderAPI(app){
   h+='<th style="text-align:left;padding:7px 8px;color:var(--muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase">Fuente</th>';
   h+='</tr></thead><tbody>';
   var sizes=[
-    ['Payload total','512','alfanum','EMV spec §4.1'],
+    ['Payload total','512','alfanum','EMV® spec §4.1'],
     ['00 — Payload Format Indicator','2','N, fijo "01"','EMV'],
     ['01 — Point of Initiation','2','N, "11" o "12"','EMV'],
     ['26-49.00 — GUID/dominio','32','ans','EMV'],
@@ -2589,33 +2622,52 @@ var bizStep = 0;
 var bizAnswers = {};
 
 var BIZ_STEPS = [
-  {id:'pventa',q:'¿Cómo es tu punto de venta?',opts:[
-    {v:'fisico',icon:'&#127978;',title:'Físico',desc:'Mostrador, mesa, local con presencia'},
-    {v:'online',icon:'&#127760;',title:'Online / E-commerce',desc:'Venta por web o app'},
-    {v:'mixto',icon:'&#128230;',title:'Mixto',desc:'Físico y online combinados'},
-  ]},
-  {id:'precios',q:'¿Los precios cambian frecuentemente?',opts:[
-    {v:'si',icon:'&#128201;',title:'Sí cambian',desc:'Por temporada, stock o promociones'},
-    {v:'no',icon:'&#128204;',title:'Son fijos',desc:'Precio estable en el tiempo'},
-  ]},
-  {id:'carrito',q:'¿Necesitás mostrar el detalle del pedido en la billetera?',opts:[
-    {v:'si',icon:'&#128722;',title:'Sí, quiero mostrar ítems',desc:'El cliente ve el detalle antes de pagar'},
-    {v:'no',icon:'&#128176;',title:'Solo el monto total',desc:'No necesito detallar los productos'},
-  ]},
-  {id:'qrtype',q:'¿Cuántos QR distintos usarás?',opts:[
-    {v:'uno',icon:'&#128247;',title:'Uno solo impreso',desc:'El mismo QR para todas las ventas'},
-    {v:'porTx',icon:'&#128290;',title:'Uno por transacción',desc:'El sistema genera un QR nuevo por venta'},
-  ]},
-  {id:'backend',q:'¿Tenés un backend/servidor disponible 24/7?',opts:[
-    {v:'si',icon:'&#128171;',title:'Sí, tengo infraestructura',desc:'Servidor propio siempre disponible'},
-    {v:'parcial',icon:'&#9888;&#65039;',title:'Sí pero no garantizo 100%',desc:'Puede tener caídas ocasionales'},
-    {v:'no',icon:'&#10060;',title:'No tengo servidor',desc:'Quiero algo simple sin backend propio'},
-  ]},
-  {id:'devoluciones',q:'¿Necesitás hacer devoluciones de pagos?',opts:[
-    {v:'si',icon:'&#128257;',title:'Sí, es importante',desc:'Debo poder devolver pagos a clientes'},
-    {v:'no',icon:'&#10060;',title:'No o raramente',desc:'No es un requisito clave'},
-  ]},
+  {
+    id:'pventa',
+    q:'¿Cómo es tu punto de venta?',
+    opts:[
+      {v:'fisico',icon:'&#127978;',title:'Físico',desc:'Mostrador, mesa, local con presencia presencial'},
+      {v:'online',icon:'&#127760;',title:'Online / E-commerce',desc:'Venta por web o app, sin contacto físico'},
+      {v:'mixto',icon:'&#128230;',title:'Mixto',desc:'Físico y online combinados'},
+    ]
+  },
+  {
+    id:'qrtype',
+    q:'¿Cómo querés gestionar los QR?',
+    opts:[
+      {v:'uno',icon:'&#128247;',title:'Un solo QR impreso',desc:'El mismo código impreso en el mostrador para todos los cobros'},
+      {v:'porTx',icon:'&#128290;',title:'Un QR por cada venta',desc:'El sistema genera un QR nuevo por cada transacción'},
+    ]
+  },
+  {
+    id:'multipago',
+    q:'¿Necesítás cobrar múltiples veces con el mismo QR sin reimprimir?',
+    hint:'Un QR sin API resolve se quema al primer pago. Para reutilizarlo necesitás un backend propio.',
+    opts:[
+      {v:'si',icon:'&#9855;&#65039;',title:'Sí, quiero reutilizar el QR',desc:'El mismo QR debe funcionar para varios cobros distintos'},
+      {v:'no',icon:'&#128196;',title:'No, un QR por cobro está bien',desc:'No me importa generar un QR nuevo por transacción'},
+    ]
+  },
+  {
+    id:'backend',
+    q:'¿Tenés un servidor/backend propio disponible 24/7?',
+    hint:'El API resolve requiere un endpoint siempre disponible. Si cae el backend, el QR no funciona.',
+    opts:[
+      {v:'si',icon:'&#128171;',title:'Sí, tengo infraestructura propia',desc:'Servidor con alta disponibilidad'},
+      {v:'parcial',icon:'&#9888;&#65039;',title:'Sí pero sin garantizar 100%',desc:'Puede tener caídas ocasionales'},
+      {v:'no',icon:'&#10060;',title:'No tengo servidor',desc:'Quiero algo simple sin backend propio'},
+    ]
+  },
+  {
+    id:'vizbilletera',
+    q:'¿Qué querés que vea el cliente en la billetera al pagar?',
+    opts:[
+      {v:'monto',icon:'&#128176;',title:'Solo el monto total',desc:'Simple: el cliente ve el importe y confirma'},
+      {v:'carrito',icon:'&#128722;',title:'Monto + detalle del pedido',desc:'La billetera puede mostrar los ítems (depende de si la billetera lo implementa)'},
+    ]
+  },
 ];
+
 
 var SCENARIOS = {
   1:{title:'Estático sin IEP',subtitle:'QR de uso único con 62.05 fijo',color:'#6366f1',icon:'&#127914;',
@@ -2645,25 +2697,69 @@ var SCENARIOS = {
 };
 
 function calcBizResult(){
-  var a=bizAnswers, usaIEP=false, isDyn=false, reasons=[];
-  if(a.carrito==='si'){usaIEP=true;reasons.push({ok:true,txt:'Necesitás carrito de artículos → requiere API resolve para devolver order.items'});}
-  if(a.precios==='si'&&a.backend!=='no'){usaIEP=true;reasons.push({ok:true,txt:'Los precios cambian → con IEP el backend puede fijar el monto en cada scan sin cambiar el QR'});}
-  if(a.backend==='no'){usaIEP=false;reasons.push({ok:false,txt:'Sin servidor propio no podés implementar API resolve → QR sin IEP'});}
-  if(a.backend==='parcial'&&!a.carrito){reasons.push({ok:'warn',txt:'El backend no garantiza disponibilidad → si cae el QR no funciona con IEP'});}
-  if(a.devoluciones==='si'){reasons.push({ok:true,txt:'Necesitás devoluciones → posible en ambos escenarios siempre que haya order.id'});}
-  if(a.qrtype==='uno'){
-    isDyn=false;
-    reasons.push({ok:true,txt:'Usás un solo QR impreso → QR estático'});
-    if(usaIEP)reasons.push({ok:true,txt:'Con IEP el mismo QR físico se vuelve reutilizable ilimitadamente (el backend genera un order.id nuevo en cada scan)'});
-    else reasons.push({ok:'warn',txt:'Sin IEP el QR se quema al pagar — deberás generar un QR nuevo por transacción'});
-  } else {
+  var a=bizAnswers, usaIEP=false, isDyn=false, reasons=[], warnings=[];
+
+  // ── Paso 1: tipo de QR ──
+  if(a.qrtype==='porTx' || a.pventa==='online' || a.pventa==='mixto'){
     isDyn=true;
-    reasons.push({ok:true,txt:'Generás un QR por transacción → QR dinámico'});
+    if(a.pventa==='online'||a.pventa==='mixto')
+      reasons.push({ok:true,txt:'Venta online → QR dinámico recomendado: cada transacción genera su propio QR con monto y order.id únicos.'});
+    else
+      reasons.push({ok:true,txt:'Un QR por cada venta → QR dinámico: cada transacción genera un QR nuevo.'});
+  } else {
+    isDyn=false;
+    reasons.push({ok:true,txt:'Un solo QR impreso → QR estático: el mismo código físico para todos los cobros.'});
   }
-  if(a.pventa==='online'||a.pventa==='mixto') reasons.push({ok:true,txt:'Venta online → QR dinámico recomendado para e-commerce'});
-  var scId=(!isDyn&&!usaIEP)?1:(!isDyn&&usaIEP)?2:(isDyn&&!usaIEP)?3:4;
+
+  // ── Paso 2: IEP/API resolve ──
+  var necesitaIEP = false;
+  var motivosIEP = [];
+
+  if(a.multipago==='si'){
+    necesitaIEP=true;
+    motivosIEP.push('Querés reutilizar el mismo QR: sin API resolve el QR se quema al primer pago. Con IEP el backend genera un order.id distinto en cada escaneo.');
+  }
+  if(a.vizbilletera==='carrito'){
+    necesitaIEP=true;
+    motivosIEP.push('Querés mostrar el carrito: requiere API resolve para que el backend devuelva order.items. Nota: la billetera decide si lo muestra o no.');
+  }
+
+  // ── Paso 3: ¿tiene backend? ──
+  if(necesitaIEP && a.backend==='no'){
+    usaIEP=false;
+    reasons.push({ok:false,txt:'Necesitás API resolve pero no tenés servidor propio → no es posible implementar IEP. El QR será autosuficiente (sin IEP).'});
+    if(a.multipago==='si' && !isDyn){
+      warnings.push('⚠️ Sin API resolve y con QR estático, el QR se quema al primer pago. Para cobrar de nuevo necesitás generar un QR nuevo cada vez, o contratar infraestructura para implementar IEP.');
+    }
+  } else if(necesitaIEP){
+    usaIEP=true;
+    motivosIEP.forEach(function(m){reasons.push({ok:true,txt:m});});
+    if(a.backend==='parcial'){
+      reasons.push({ok:'warn',txt:'Tu backend no garantiza 100% de disponibilidad: si cae, el QR no funciona. Considerá mejorar la disponibilidad o tener un fallback.'});
+    }
+  } else {
+    usaIEP=false;
+    reasons.push({ok:true,txt:'No necesitás API resolve para tu caso de uso → QR autosuficiente (sin IEP). Más simple y resiliente.'});
+  }
+
+  // ── Determinar escenario ──
+  var scId = (!isDyn&&!usaIEP)?1:(!isDyn&&usaIEP)?2:(isDyn&&!usaIEP)?3:4;
+
+  // ── Devoluciones ──
+  var devInfo = '';
+  if(scId===1||scId===3){
+    devInfo='Devoluciones: ✅ posibles — el campo 62.05 del QR contiene el order.id que identifica la transacción.';
+  } else {
+    devInfo='Devoluciones: ✅ posibles — el backend genera el order.id en cada /resolve, que identifica la transacción.';
+  }
+  reasons.push({ok:true,txt:devInfo});
+
+  // Agregar warnings al final
+  warnings.forEach(function(w){reasons.push({ok:'warn',txt:w});});
+
   return {scId:scId,usaIEP:usaIEP,isDyn:isDyn,reasons:reasons};
 }
+
 
 function renderBizStep(){
   var app=document.getElementById('app');if(!app)return;
@@ -2856,8 +2952,8 @@ function renderResolveExamples(scId,q){
 }
 function renderScenarios(app){
   var h='<div class="card"><div class="card-title">🎯 Analizador de Escenarios</div>';
-  h+='<div class="alert info"><span>ℹ</span><span>Pegá el string EMV de tu QR para ver qué escenarios de pago son compatibles.</span></div>';
-  h+='<div class="field" style="margin-top:8px"><textarea id="sc-input" rows="4" placeholder="Pegá el string EMV aquí..." style="font-family:var(--mono);font-size:11px"></textarea></div>';
+  h+='<div class="alert info"><span>ℹ</span><span>Pegá el string EMV® de tu QR para ver qué escenarios de pago son compatibles.</span></div>';
+  h+='<div class="field" style="margin-top:8px"><textarea id="sc-input" rows="4" placeholder="Pegá el string EMV® aquí..." style="font-family:var(--mono);font-size:11px"></textarea></div>';
   if(window.BarcodeDetector){h+='<div style="display:flex;gap:8px;margin-bottom:12px"><button class="build-btn" style="flex:1" onclick="analyzeScenario()">🔍 Analizar</button><button class="build-btn" style="flex:0;background:var(--card);border:1px solid var(--border);color:var(--text);padding:0 16px" onclick="startScenarioScan()">📷</button></div>';}
   else{h+='<button class="build-btn" style="margin-bottom:12px" onclick="analyzeScenario()">🔍 Analizar escenarios</button>';}
   h+='<div id="sc-scanner" style="display:none;margin-bottom:12px"><video id="sc-video" autoplay playsinline muted style="width:100%;border-radius:10px;background:#000;max-height:260px"></video><div id="sc-scan-status" style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px">Apuntá al QR...</div><button class="build-btn" style="margin-top:8px;background:var(--card);border:1px solid var(--border);color:var(--text)" onclick="stopScenarioScan()">⏹ Detener</button></div></div><div id="sc-result"></div>';
@@ -2871,9 +2967,9 @@ function analyzeScenario(){
   stopScenarioScan();
   var raw=((document.getElementById('sc-input')||{}).value||'').trim();
   var res=document.getElementById('sc-result');if(!res)return;
-  if(!raw){res.innerHTML='<div class="alert warn"><span>⚠️</span><span>Pegá un string EMV primero.</span></div>';return;}
+  if(!raw){res.innerHTML='<div class="alert warn"><span>⚠️</span><span>Pegá un string EMV® primero.</span></div>';return;}
   var q=parseQRForScenarios(raw);
-  if(!q.valid){res.innerHTML='<div class="alert warn"><span>⚠️</span><span>El string no parece un QR EMV válido.</span></div>';return;}
+  if(!q.valid){res.innerHTML='<div class="alert warn"><span>⚠️</span><span>El string no parece un QR EMV® válido.</span></div>';return;}
   var scId=getScenarioId(q),sc=SCENARIOS[scId];if(!sc)return;
   var h='<div class="card" style="border:2px solid '+sc.color+'"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span style="font-size:36px">'+sc.icon+'</span><div><div style="font-size:16px;font-weight:800;color:'+sc.color+'">Escenario '+scId+': '+sc.title+'</div><div style="font-size:12px;color:var(--muted)">'+sc.subtitle+'</div></div></div>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';sc.tags.forEach(function(t){h+='<span style="background:'+sc.color+'22;color:'+sc.color+';border:1px solid '+sc.color+'44;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">'+t+'</span>';});h+='</div>';
