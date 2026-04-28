@@ -253,7 +253,7 @@ textarea{resize:vertical;min-height:60px;font-family:var(--mono);font-size:11px}
   <button class="tab-btn" onclick="showTab('decode',this)">🔍 Decodificador</button>
   <button class="tab-btn" onclick="showTab('faq',this)">❓ FAQ / IA</button>
   <button class="tab-btn" onclick="showTab('api',this)">&#128268; API Resolve</button>
-  <button class="tab-btn" onclick="showTab('scenarios',this)">&#127914; Escenarios</button>
+  <button class="tab-btn" onclick="showTab('scenarios',this)">&#127919; Escenarios</button>
 </div>
 
 <div id="app"></div>
@@ -265,6 +265,14 @@ let scanStream=null, scanRaf=null;
 // ── ROUTER ──
 function showTab(name,el){
   stopScanner();
+  // Resetear estado del tab que se abandona
+  if(name==='wizard'){
+    // Al volver a Guided, mostrar siempre la pantalla inicial
+    if(typeof wiz !== 'undefined') wiz={mode:null,step:0,answers:{}};
+  }
+  if(name==='scenarios'){
+    stopScenarioScan && stopScenarioScan();
+  }
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
   window.scrollTo(0,0);
@@ -274,17 +282,8 @@ function showTab(name,el){
 }
 
 // ── UTILS ──
-function genUUID(){
-  // UUID v4 usando crypto.randomUUID si está disponible, sino manual
-  if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
-    var r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8);
-    return v.toString(16);
-  });
-}
-function normalizeEMV(s){
-  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^\x20-\x7E]/g,'?');
-}
+function normalizeEMV(s){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^\x20-\x7E]/g,'?');}
+function genUUID(){if(window.crypto&&window.crypto.randomUUID)return window.crypto.randomUUID();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(z){var r=Math.random()*16|0,v=z==='x'?r:(r&0x3|0x8);return v.toString(16);});}
 function tlv(id,val){ val=String(val); return id+String(val.length).padStart(2,'0')+val }
 function crc16(str){
   let c=0xFFFF;
@@ -391,44 +390,6 @@ function getQRCanvas(containerId, callback){
   }
 }
 
-
-function scanFromPhoto(input){
-  var file = input.files && input.files[0];
-  if(!file) return;
-  var st = document.getElementById('scan-status');
-  if(st) st.textContent = 'Procesando imagen…';
-
-  var reader = new FileReader();
-  reader.onload = function(e){
-    var img = new Image();
-    img.onload = function(){
-      // Dibujar la imagen en un canvas y pasarla a jsQR
-      var cv = document.createElement('canvas');
-      // Escalar si es muy grande (jsQR funciona mejor con imágenes medianas)
-      var maxDim = 1024;
-      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-      cv.width  = Math.round(img.width  * scale);
-      cv.height = Math.round(img.height * scale);
-      var ctx = cv.getContext('2d');
-      ctx.drawImage(img, 0, 0, cv.width, cv.height);
-      var d = ctx.getImageData(0, 0, cv.width, cv.height);
-      var code = jsQR(d.data, d.width, d.height, {inversionAttempts:'attemptBoth'});
-      if(code && code.data){
-        if(st) st.textContent = '✅ QR detectado!';
-        var inp = document.getElementById('decode-input');
-        if(inp) inp.value = code.data;
-        renderDecodeResult(code.data);
-      } else {
-        if(st) st.textContent = '❌ No se detectó QR. Intentá con mejor luz o más cerca.';
-      }
-      // Limpiar el input para permitir volver a usar
-      input.value = '';
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
 function isMobile(){
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
@@ -508,100 +469,62 @@ const BRANDS=['Visa crédito','Visa débito','Mastercard','Mastercard debit','Ma
 // Estado reactivo del constructor
 let buildState = {};
 
-var CITY_DATA=[{"c": "BUENOS AIRES", "p": "C1001AAA"}, {"c": "PALERMO", "p": "C1425AAA"}, {"c": "BELGRANO", "p": "C1426AAA"}, {"c": "FLORES", "p": "C1406AAA"}, {"c": "CABALLITO", "p": "C1406AAA"}, {"c": "RECOLETA", "p": "C1113AAA"}, {"c": "SAN TELMO", "p": "C1075AAA"}, {"c": "MICROCENTRO", "p": "C1000AAA"}, {"c": "PUERTO MADERO", "p": "C1107AAA"}, {"c": "VILLA DEL PARQUE", "p": "C1417AAA"}, {"c": "ALMAGRO", "p": "C1196AAA"}, {"c": "BOEDO", "p": "C1218AAA"}, {"c": "CHACARITA", "p": "C1427AAA"}, {"c": "VILLA URQUIZA", "p": "C1431AAA"}, {"c": "MATADEROS", "p": "C1440AAA"}, {"c": "VILLA LUGANO", "p": "C1439AAA"}, {"c": "LINIERS", "p": "C1408AAA"}, {"c": "MONSERRAT", "p": "C1067AAA"}, {"c": "BARRACAS", "p": "C1273AAA"}, {"c": "LA BOCA", "p": "C1155AAA"}, {"c": "NUNEZ", "p": "C1429AAA"}, {"c": "SAAVEDRA", "p": "C1430AAA"}, {"c": "COLEGIALES", "p": "C1426AAA"}, {"c": "PATERNAL", "p": "C1416AAA"}, {"c": "SAN ISIDRO", "p": "B1642AAA"}, {"c": "MARTINEZ", "p": "B1640AAA"}, {"c": "OLIVOS", "p": "B1636AAA"}, {"c": "VICENTE LOPEZ", "p": "B1638AAA"}, {"c": "FLORIDA", "p": "B1602AAA"}, {"c": "MUNRO", "p": "B1605AAA"}, {"c": "TIGRE", "p": "B1648AAA"}, {"c": "SAN FERNANDO", "p": "B1646AAA"}, {"c": "ACASSUSO", "p": "B1641AAA"}, {"c": "BOULOGNE", "p": "B1661AAA"}, {"c": "LA LUCILA", "p": "B1636AAA"}, {"c": "BECCAR", "p": "B1643AAA"}, {"c": "NORDELTA", "p": "B1670AAA"}, {"c": "PILAR", "p": "B1629AAA"}, {"c": "ESCOBAR", "p": "B1625AAA"}, {"c": "GARÍN", "p": "B1619AAA"}, {"c": "GENERAL PACHECO", "p": "B1617AAA"}, {"c": "DON TORCUATO", "p": "B1611AAA"}, {"c": "JOSE LEON SUAREZ", "p": "B1655AAA"}, {"c": "VILLA ADELINA", "p": "B1607AAA"}, {"c": "MORÓN", "p": "B1708AAA"}, {"c": "HAEDO", "p": "B1706AAA"}, {"c": "EL PALOMAR", "p": "B1684AAA"}, {"c": "CASTELAR", "p": "B1712AAA"}, {"c": "ITUZAINGO", "p": "B1714AAA"}, {"c": "RAMOS MEJIA", "p": "B1704AAA"}, {"c": "SAN JUSTO", "p": "B1754AAA"}, {"c": "CIUDADELA", "p": "B1702AAA"}, {"c": "LINIERS GBA", "p": "B1407AAA"}, {"c": "MERLO", "p": "B1722AAA"}, {"c": "MORENO", "p": "B1744AAA"}, {"c": "GENERAL RODRIGUEZ", "p": "B1748AAA"}, {"c": "LUJÁN", "p": "B6700AAA"}, {"c": "MERCEDES", "p": "B6600AAA"}, {"c": "MARCOS PAZ", "p": "B1727AAA"}, {"c": "LOMAS DE ZAMORA", "p": "B1832AAA"}, {"c": "BANFIELD", "p": "B1828AAA"}, {"c": "TEMPERLEY", "p": "B1834AAA"}, {"c": "LANÚS", "p": "B1824AAA"}, {"c": "AVELLANEDA", "p": "B1870AAA"}, {"c": "QUILMES", "p": "B1878AAA"}, {"c": "BERNAL", "p": "B1876AAA"}, {"c": "BERAZATEGUI", "p": "B1884AAA"}, {"c": "FLORENCIO VARELA", "p": "B1888AAA"}, {"c": "ALMIRANTE BROWN", "p": "B1846AAA"}, {"c": "SAN VICENTE", "p": "B1853AAA"}, {"c": "CAÑUELAS", "p": "B1814AAA"}, {"c": "EZEIZA", "p": "B1804AAA"}, {"c": "MONTE GRANDE", "p": "B1842AAA"}, {"c": "LONGCHAMPS", "p": "B1854AAA"}, {"c": "ADROGUÉ", "p": "B1846AAA"}, {"c": "BURZACO", "p": "B1852AAA"}, {"c": "GLEW", "p": "B1856AAA"}, {"c": "SAN MARTÍN", "p": "B1650AAA"}, {"c": "VILLA LYNCH", "p": "B1672AAA"}, {"c": "PALERMO GBA", "p": "B1651AAA"}, {"c": "VILLA BALLESTER", "p": "B1653AAA"}, {"c": "GENERAL SAN MARTIN", "p": "B1650AAA"}, {"c": "TRES DE FEBRERO", "p": "B1678AAA"}, {"c": "JOSE C PAZ", "p": "B1665AAA"}, {"c": "MALVINAS ARGENTINAS", "p": "B1613AAA"}, {"c": "SAN MIGUEL", "p": "B1663AAA"}, {"c": "BELLA VISTA", "p": "B1661AAA"}, {"c": "LA PLATA", "p": "B1900AAA"}, {"c": "BERISSO", "p": "B1923AAA"}, {"c": "ENSENADA", "p": "B1925AAA"}, {"c": "MAR DEL PLATA", "p": "B7600AAA"}, {"c": "BAHÍA BLANCA", "p": "B8000AAA"}, {"c": "TANDIL", "p": "B7000AAA"}, {"c": "NECOCHEA", "p": "B7630AAA"}, {"c": "MIRAMAR", "p": "B7607AAA"}, {"c": "PINAMAR", "p": "B7167AAA"}, {"c": "VILLA GESELL", "p": "B7165AAA"}, {"c": "MONTE HERMOSO", "p": "B8153AAA"}, {"c": "OLAVARRÍA", "p": "B7400AAA"}, {"c": "AZUL", "p": "B7300AAA"}, {"c": "JUNÍN", "p": "B6000AAA"}, {"c": "PERGAMINO", "p": "B2700AAA"}, {"c": "SAN NICOLÁS", "p": "B2900AAA"}, {"c": "RAMALLO", "p": "B2915AAA"}, {"c": "ZÁRATE", "p": "B2820AAA"}, {"c": "CAMPANA", "p": "B2804AAA"}, {"c": "SAN PEDRO", "p": "B2930AAA"}, {"c": "CHIVILCOY", "p": "B6620AAA"}, {"c": "BRAGADO", "p": "B6640AAA"}, {"c": "NUEVE DE JULIO", "p": "B6500AAA"}, {"c": "PEHUAJÓ", "p": "B6450AAA"}, {"c": "TRENQUE LAUQUEN", "p": "B6400AAA"}, {"c": "RIVADAVIA", "p": "B6355AAA"}, {"c": "TRES ARROYOS", "p": "B7500AAA"}, {"c": "CORONEL SUÁREZ", "p": "B7540AAA"}, {"c": "CORONEL PRINGLES", "p": "B7530AAA"}, {"c": "BENITO JUÁREZ", "p": "B7020AAA"}, {"c": "DOLORES", "p": "B7100AAA"}, {"c": "CHASCOMÚS", "p": "B7130AAA"}, {"c": "LOBOS", "p": "B7240AAA"}, {"c": "SAN ANDRÉS DE GILES", "p": "B6720AAA"}, {"c": "EXALTACIÓN DE LA CRUZ", "p": "B2806AAA"}, {"c": "ARRECIFES", "p": "B2740AAA"}, {"c": "SALTO", "p": "B2741AAA"}, {"c": "CÓRDOBA", "p": "X5000AAA"}, {"c": "RÍO CUARTO", "p": "X5800AAA"}, {"c": "SAN FRANCISCO", "p": "X2400AAA"}, {"c": "VILLA MARÍA", "p": "X5900AAA"}, {"c": "ALTA GRACIA", "p": "X5186AAA"}, {"c": "COSQUÍN", "p": "X5166AAA"}, {"c": "LA FALDA", "p": "X5172AAA"}, {"c": "CARLOS PAZ", "p": "X5152AAA"}, {"c": "JESÚS MARÍA", "p": "X5220AAA"}, {"c": "BELL VILLE", "p": "X2720AAA"}, {"c": "MARCOS JUÁREZ", "p": "X2580AAA"}, {"c": "LABOULAYE", "p": "X6120AAA"}, {"c": "RÍO TERCERO", "p": "X5850AAA"}, {"c": "VILLA DOLORES", "p": "X5870AAA"}, {"c": "DEAN FUNES", "p": "X5200AAA"}, {"c": "VILLA CARLOS PAZ", "p": "X5152AAA"}, {"c": "UNQUILLO", "p": "X5109AAA"}, {"c": "LA CALERA", "p": "X5004AAA"}, {"c": "RÍO CEBALLOS", "p": "X5115AAA"}, {"c": "SALSIPUEDES", "p": "X5118AAA"}, {"c": "SANTA FE", "p": "S3000AAA"}, {"c": "ROSARIO", "p": "S2000AAA"}, {"c": "RAFAELA", "p": "S2300AAA"}, {"c": "VENADO TUERTO", "p": "S2600AAA"}, {"c": "RECONQUISTA", "p": "S3560AAA"}, {"c": "RESISTENCIA", "p": "H3500AAA"}, {"c": "SAN LORENZO", "p": "S2200AAA"}, {"c": "CASILDA", "p": "S2170AAA"}, {"c": "CAÑADA DE GÓMEZ", "p": "S2500AAA"}, {"c": "ESPERANZA", "p": "S3080AAA"}, {"c": "SANTO TOMÉ", "p": "S3016AAA"}, {"c": "PARANÁ", "p": "E3100AAA"}, {"c": "VILLAGUAY", "p": "E3240AAA"}, {"c": "GUALEGUAYCHÚ", "p": "E2820AAA"}, {"c": "CONCORDIA", "p": "E3200AAA"}, {"c": "LA PAZ", "p": "E3190AAA"}, {"c": "DIAMANTE", "p": "E3105AAA"}, {"c": "VICTORIA", "p": "E3153AAA"}, {"c": "MENDOZA", "p": "M5500AAA"}, {"c": "GODOY CRUZ", "p": "M5501AAA"}, {"c": "GUAYMALLÉN", "p": "M5521AAA"}, {"c": "LAS HERAS", "p": "M5539AAA"}, {"c": "MAIPÚ", "p": "M5515AAA"}, {"c": "LUJÁN DE CUYO", "p": "M5507AAA"}, {"c": "SAN RAFAEL", "p": "M5600AAA"}, {"c": "GENERAL ALVEAR", "p": "M5620AAA"}, {"c": "MALARGÜE", "p": "M5613AAA"}, {"c": "RIVADAVIA MDZ", "p": "M5574AAA"}, {"c": "JUNÍN MDZ", "p": "M5570AAA"}, {"c": "SAN MARTÍN MDZ", "p": "M5570AAA"}, {"c": "SAN MIGUEL DE TUCUMÁN", "p": "T4000AAA"}, {"c": "YERBA BUENA", "p": "T4107AAA"}, {"c": "TAFÍ VIEJO", "p": "T4103AAA"}, {"c": "BANDA DEL RÍO SALÍ", "p": "T4100AAA"}, {"c": "CONCEPCIÓN", "p": "T4138AAA"}, {"c": "MONTEROS", "p": "T4142AAA"}, {"c": "FAMAILLÁ", "p": "T4132AAA"}, {"c": "SALTA", "p": "A4400AAA"}, {"c": "SAN RAMÓN DE LA NUEVA ORÁN", "p": "A4530AAA"}, {"c": "TARTAGAL", "p": "A4560AAA"}, {"c": "GENERAL GÜEMES", "p": "A4420AAA"}, {"c": "METÁN", "p": "A4440AAA"}, {"c": "ROSARIO DE LA FRONTERA", "p": "A4442AAA"}, {"c": "CAFAYATE", "p": "A4427AAA"}, {"c": "SAN SALVADOR DE JUJUY", "p": "Y4600AAA"}, {"c": "PALPALÁ", "p": "Y4612AAA"}, {"c": "LIBERTADOR GENERAL SAN MARTÍN", "p": "Y4662AAA"}, {"c": "LA QUIACA", "p": "Y4650AAA"}, {"c": "POSADAS", "p": "N3300AAA"}, {"c": "OBERÁ", "p": "N3360AAA"}, {"c": "ELDORADO", "p": "N3380AAA"}, {"c": "PUERTO IGUAZÚ", "p": "N3370AAA"}, {"c": "APÓSTOLES", "p": "N3316AAA"}, {"c": "PRESIDENCIA ROQUE SÁENZ PEÑA", "p": "H3700AAA"}, {"c": "VILLA ÁNGELA", "p": "H3540AAA"}, {"c": "CHARATA", "p": "H3730AAA"}, {"c": "CORRIENTES", "p": "W3400AAA"}, {"c": "GOYA", "p": "W3450AAA"}, {"c": "MERCEDES", "p": "W3470AAA"}, {"c": "CURUZÚ CUATIÁ", "p": "W3460AAA"}, {"c": "SANTO TOMÉ COR", "p": "W3007AAA"}, {"c": "NEUQUÉN", "p": "Q8300AAA"}, {"c": "CIPOLLETTI", "p": "R8324AAA"}, {"c": "CUTRAL CÓ", "p": "Q8322AAA"}, {"c": "PLOTTIER", "p": "Q8316AAA"}, {"c": "ZAPALA", "p": "Q8340AAA"}, {"c": "JUNÍN DE LOS ANDES", "p": "Q8371AAA"}, {"c": "SAN MARTÍN DE LOS ANDES", "p": "Q8370AAA"}, {"c": "VILLA LA ANGOSTURA", "p": "Q8407AAA"}, {"c": "VIEDMA", "p": "R8500AAA"}, {"c": "BARILOCHE", "p": "R8400AAA"}, {"c": "GENERAL ROCA", "p": "R8332AAA"}, {"c": "ALLEN", "p": "R8328AAA"}, {"c": "VILLA REGINA", "p": "R8336AAA"}, {"c": "EL BOLSÓN", "p": "R8430AAA"}, {"c": "RAWSON", "p": "U9103AAA"}, {"c": "COMODORO RIVADAVIA", "p": "U9000AAA"}, {"c": "TRELEW", "p": "U9100AAA"}, {"c": "PUERTO MADRYN", "p": "U9120AAA"}, {"c": "ESQUEL", "p": "U9200AAA"}, {"c": "RÍO GALLEGOS", "p": "Z9400AAA"}, {"c": "CALETA OLIVIA", "p": "Z9011AAA"}, {"c": "EL CALAFATE", "p": "Z9405AAA"}, {"c": "PICO TRUNCADO", "p": "Z9015AAA"}, {"c": "USHUAIA", "p": "V9410AAA"}, {"c": "RÍO GRANDE", "p": "V9420AAA"}, {"c": "SANTA ROSA", "p": "L6300AAA"}, {"c": "GENERAL PICO", "p": "L6360AAA"}, {"c": "TOAY", "p": "L6303AAA"}, {"c": "SAN LUIS", "p": "D5700AAA"}, {"c": "VILLA MERCEDES", "p": "D5730AAA"}, {"c": "MERLO SL", "p": "D5881AAA"}, {"c": "SAN JUAN", "p": "J5400AAA"}, {"c": "RAWSON SJ", "p": "J5409AAA"}, {"c": "RIVADAVIA SJ", "p": "J5413AAA"}, {"c": "CAUCETE", "p": "J5442AAA"}, {"c": "LA RIOJA", "p": "F5300AAA"}, {"c": "CHILECITO", "p": "F5360AAA"}, {"c": "SAN FERNANDO DEL VALLE DE CATAMARCA", "p": "K4700AAA"}, {"c": "TINOGASTA", "p": "K5340AAA"}, {"c": "SANTIAGO DEL ESTERO", "p": "G4200AAA"}, {"c": "LA BANDA", "p": "G4302AAA"}, {"c": "TERMAS DE RÍO HONDO", "p": "G4220AAA"}, {"c": "FRÍAS", "p": "G4230AAA"}, {"c": "FORMOSA", "p": "P3600AAA"}, {"c": "CLORINDA", "p": "P3708AAA"}, {"c": "PIRANÉ", "p": "P3612AAA"}];
+var CITY_DATA=[{"c": "BUENOS AIRES", "p": "C1001AAA"}, {"c": "PALERMO", "p": "C1425AAA"}, {"c": "BELGRANO", "p": "C1426AAA"}, {"c": "FLORES", "p": "C1406AAA"}, {"c": "CABALLITO", "p": "C1406AAA"}, {"c": "RECOLETA", "p": "C1113AAA"}, {"c": "OLIVOS", "p": "B1636AAA"}, {"c": "SAN ISIDRO", "p": "B1642AAA"}, {"c": "MARTINEZ", "p": "B1640AAA"}, {"c": "TIGRE", "p": "B1648AAA"}, {"c": "PILAR", "p": "B1629AAA"}, {"c": "ESCOBAR", "p": "B1625AAA"}, {"c": "TEMPERLEY", "p": "B1834AAA"}, {"c": "LOMAS DE ZAMORA", "p": "B1832AAA"}, {"c": "BANFIELD", "p": "B1828AAA"}, {"c": "QUILMES", "p": "B1878AAA"}, {"c": "AVELLANEDA", "p": "B1870AAA"}, {"c": "BERAZATEGUI", "p": "B1884AAA"}, {"c": "FLORENCIO VARELA", "p": "B1888AAA"}, {"c": "LA PLATA", "p": "B1900AAA"}, {"c": "MAR DEL PLATA", "p": "B7600AAA"}, {"c": "BAHIA BLANCA", "p": "B8000AAA"}, {"c": "TANDIL", "p": "B7000AAA"}, {"c": "OLAVARRIA", "p": "B7400AAA"}, {"c": "JUNIN", "p": "B6000AAA"}, {"c": "PERGAMINO", "p": "B2700AAA"}, {"c": "ZARATE", "p": "B2820AAA"}, {"c": "CAMPANA", "p": "B2804AAA"}, {"c": "LUJAN", "p": "B6700AAA"}, {"c": "NECOCHEA", "p": "B7630AAA"}, {"c": "MORON", "p": "B1708AAA"}, {"c": "HAEDO", "p": "B1706AAA"}, {"c": "CASTELAR", "p": "B1712AAA"}, {"c": "MERLO", "p": "B1722AAA"}, {"c": "MORENO", "p": "B1744AAA"}, {"c": "SAN JUSTO", "p": "B1754AAA"}, {"c": "SAN MARTIN", "p": "B1650AAA"}, {"c": "FLORIDA", "p": "B1602AAA"}, {"c": "MUNRO", "p": "B1605AAA"}, {"c": "JOSE C PAZ", "p": "B1665AAA"}, {"c": "SAN MIGUEL", "p": "B1663AAA"}, {"c": "ADROGUE", "p": "B1846AAA"}, {"c": "BURZACO", "p": "B1852AAA"}, {"c": "MONTE GRANDE", "p": "B1842AAA"}, {"c": "GLEW", "p": "B1856AAA"}, {"c": "ROSARIO", "p": "S2000AAA"}, {"c": "SANTA FE", "p": "S3000AAA"}, {"c": "RAFAELA", "p": "S2300AAA"}, {"c": "CONCORDIA", "p": "E3200AAA"}, {"c": "PARANA", "p": "E3100AAA"}, {"c": "CORDOBA", "p": "X5000AAA"}, {"c": "RIO CUARTO", "p": "X5800AAA"}, {"c": "VILLA MARIA", "p": "X5900AAA"}, {"c": "ALTA GRACIA", "p": "X5186AAA"}, {"c": "MENDOZA", "p": "M5500AAA"}, {"c": "GODOY CRUZ", "p": "M5501AAA"}, {"c": "SAN RAFAEL", "p": "M5600AAA"}, {"c": "SAN MIGUEL DE TUCUMAN", "p": "T4000AAA"}, {"c": "SALTA", "p": "A4400AAA"}, {"c": "SAN SALVADOR DE JUJUY", "p": "Y4600AAA"}, {"c": "POSADAS", "p": "N3300AAA"}, {"c": "PUERTO IGUAZU", "p": "N3370AAA"}, {"c": "RESISTENCIA", "p": "H3500AAA"}, {"c": "CORRIENTES", "p": "W3400AAA"}, {"c": "NEUQUEN", "p": "Q8300AAA"}, {"c": "CIPOLLETTI", "p": "R8324AAA"}, {"c": "BARILOCHE", "p": "R8400AAA"}, {"c": "COMODORO RIVADAVIA", "p": "U9000AAA"}, {"c": "TRELEW", "p": "U9100AAA"}, {"c": "PUERTO MADRYN", "p": "U9120AAA"}, {"c": "RIO GALLEGOS", "p": "Z9400AAA"}, {"c": "USHUAIA", "p": "V9410AAA"}, {"c": "RIO GRANDE", "p": "V9420AAA"}, {"c": "SANTA ROSA", "p": "L6300AAA"}, {"c": "SAN LUIS", "p": "D5700AAA"}, {"c": "SAN JUAN", "p": "J5400AAA"}, {"c": "LA RIOJA", "p": "F5300AAA"}, {"c": "CATAMARCA", "p": "K4700AAA"}, {"c": "SANTIAGO DEL ESTERO", "p": "G4200AAA"}, {"c": "FORMOSA", "p": "P3600AAA"}, {"c": "CHIVILCOY", "p": "B6620AAA"}, {"c": "TRES ARROYOS", "p": "B7500AAA"}, {"c": "AZUL", "p": "B7300AAA"}];
 
-
-
+function normalizeQuery(q){return String(q).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();}
 function wizCitySearch(q){
-  var inp = document.getElementById('wiz-city-input');
-  var results_div = document.getElementById('wiz-city-results');
-  if(!inp || !results_div) return;
-  // Guardar lo que escribe el usuario como ciudad libre
-  wiz.answers.city = (q||'').toUpperCase();
-  if(wiz.answers.postalCode && q.toUpperCase() !== wiz.answers.city){
-    wiz.answers.postalCode = '';
-  }
-  var q2 = (q||'').trim().toUpperCase();
-  if(q2.length < 2){ results_div.style.display='none'; return; }
-  var data = window.CITY_DATA || [];
-  var results = data.filter(function(x){
-    return x.c.indexOf(q2) !== -1 || x.p.indexOf(q2) !== -1;
-  }).slice(0,8);
-  if(!results.length){ results_div.style.display='none'; return; }
-  var h = '';
+  var inp=document.getElementById('wiz-city-input'),dd=document.getElementById('wiz-city-results');
+  if(!inp||!dd)return;
+  wiz.answers.city=(q||'').toUpperCase();
+  var q2=normalizeQuery(q);
+  if(q2.length<2){dd.style.display='none';return;}
+  var results=(window.CITY_DATA||[]).filter(function(x){return normalizeQuery(x.c).indexOf(q2)!==-1||x.p.indexOf(q2)!==-1;}).slice(0,8);
+  if(!results.length){dd.style.display='none';return;}
+  var h='';
   for(var i=0;i<results.length;i++){
-    var r = results[i];
-    var city = r.c.replace(/'/g,"\\'");
-    h += '<div style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--card)" '
-       + 'ontouchstart="event.preventDefault();wizSelectCity(\''+city+'\',\''+r.p+'\')" '
-       + 'onmousedown="event.preventDefault();wizSelectCity(\''+city+'\',\''+r.p+'\')">'
-       + '<span style="color:var(--text);font-size:14px">'+r.c+'</span>'
-       + '<span style="color:var(--accent2);font-family:var(--mono);font-size:11px">'+r.p+'</span>'
-       + '</div>';
+    var r=results[i];
+    var cityEsc=r.c.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    h+='<div style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--card)"';
+    h+=' data-city="'+r.c+'" data-postal="'+r.p+'" class="city-opt">';
+    h+='<span style="color:var(--text);font-size:14px">'+r.c+'</span>';
+    h+='<span style="color:var(--accent2);font-family:var(--mono);font-size:11px">'+r.p+'</span></div>';
   }
-  results_div.innerHTML = h;
-  results_div.style.display = 'block';
+  dd.innerHTML=h;
+  dd.querySelectorAll('.city-opt').forEach(function(el){
+    el.addEventListener('touchstart',function(e){e.preventDefault();wizSelectCity(el.dataset.city,el.dataset.postal);},{passive:false});
+    el.addEventListener('mousedown',function(e){e.preventDefault();wizSelectCity(el.dataset.city,el.dataset.postal);});
+  });
+  dd.style.display='block';
 }
-
-
-function wizSelectCity(city, postal){
-  wiz.answers.city = city;
-  wiz.answers.postalCode = postal;
-  // Actualizar input
-  var inp = document.getElementById('wiz-city-input');
-  if(inp){ inp.value = city; inp.blur(); }
-  // Cerrar dropdown
-  var dd = document.getElementById('wiz-city-results');
-  if(dd) dd.style.display = 'none';
-  // Refrescar preview EMV
-  var prev = document.querySelector('.wiz-tokens');
-  if(prev) prev.innerHTML = buildWizEMV(true) || '<span style="color:var(--border)">Se irá construyendo...</span>';
-  // Mostrar ciudad y postal seleccionados
-  var container = inp ? inp.closest('div[style*="position:relative"]') : null;
-  if(container){
-    var info = container.nextElementSibling;
-    if(info && info.tagName === 'P'){
-      info.innerHTML = 'Ciudad: <strong style="color:var(--accent)">'+city+'</strong> — Postal: <strong style="color:var(--accent2)">'+postal+'</strong>';
-    } else {
-      var p = document.createElement('p');
-      p.style.cssText = 'font-size:11px;color:var(--muted);margin-top:8px';
-      p.innerHTML = 'Ciudad: <strong style="color:var(--accent)">'+city+'</strong> — Postal: <strong style="color:var(--accent2)">'+postal+'</strong>';
-      container.parentNode.insertBefore(p, container.nextSibling);
-    }
-  }
+function wizSelectCity(city,postal){
+  wiz.answers.city=city;wiz.answers.postalCode=postal;
+  var inp=document.getElementById('wiz-city-input');
+  if(inp){inp.value=city;inp.blur();}
+  var dd=document.getElementById('wiz-city-results');
+  if(dd)dd.style.display='none';
 }
-
 function showCitySearch(q){
-  var dd = document.getElementById('city-dd');
-  if(!dd) return;
-  q = q.trim().toUpperCase();
-  if(q.length < 2){ dd.style.display='none'; return; }
-  var results = CITY_DATA.filter(function(x){
-    return x.c.indexOf(q) !== -1 || x.p.indexOf(q) !== -1;
-  }).slice(0,12);
-  if(!results.length){ dd.style.display='none'; return; }
-  var h = '';
+  var dd=document.getElementById('city-dd');if(!dd)return;
+  q=normalizeQuery(q);if(q.length<2){dd.style.display='none';return;}
+  var results=(window.CITY_DATA||[]).filter(function(x){return normalizeQuery(x.c).indexOf(q)!==-1||x.p.indexOf(q)!==-1;}).slice(0,10);
+  if(!results.length){dd.style.display='none';return;}
+  var h='';
   for(var i=0;i<results.length;i++){
-    var r = results[i];
-    h += '<div style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" '
-       + 'onmousedown="selectCity(\'' + r.c.replace(/'/g,"\\'") + '\',\'' + r.p + '\')">'
-       + '<span style="color:var(--text)">' + r.c + '</span>'
-       + '<span style="color:var(--muted);font-family:var(--mono);font-size:11px">' + r.p + '</span>'
-       + '</div>';
+    var r=results[i];
+    h+='<div class="city-build-opt" data-city="'+r.c+'" data-postal="'+r.p+'" style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">';
+    h+='<span style="color:var(--text)">'+r.c+'</span><span style="color:var(--muted);font-family:var(--mono);font-size:11px">'+r.p+'</span></div>';
   }
-  dd.innerHTML = h;
-  dd.style.display = 'block';
+  dd.innerHTML=h;
+  dd.querySelectorAll('.city-build-opt').forEach(function(el){
+    el.addEventListener('mousedown',function(e){e.preventDefault();selectCity(el.dataset.city,el.dataset.postal);});
+  });
+  dd.style.display='block';
 }
-
-function selectCity(city, postal){
-  buildState.city = city;
-  buildState.postalCode = postal;
-  var f60 = document.getElementById('f60');
-  var f61 = document.getElementById('f61');
-  if(f60) f60.value = city;
-  if(f61) f61.value = postal;
-  var dd = document.getElementById('city-dd');
-  if(dd) dd.style.display = 'none';
+function selectCity(city,postal){
+  buildState.city=city;buildState.postalCode=postal;
+  var f60=document.getElementById('f60'),f61=document.getElementById('f61');
+  if(f60)f60.value=city;if(f61)f61.value=postal;
+  var dd=document.getElementById('city-dd');if(dd)dd.style.display='none';
 }
 
 function initBuildState(){
@@ -675,7 +598,7 @@ function rebuildBuildHTML(app){
   <div class="card">
     <div class="card-title"><span class="etag">ID 26–49</span> Merchant Account Information <span class="info-pill">📋 CIMPRA 525/530/535/540</span></div>
     <div class="alert warn"><span>⚠️</span><span>
-      El <strong>dominio invertido</strong> en subcampo 00 identifica al aceptador (ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">ar.com.modo</code>). 
+      El <strong>dominio invertido</strong> en subcampo 00 identifica al aceptador (ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.coelsa</code>). 
       La billetera lo usa como clave en la tabla de resolución de URL para encontrar la API del aceptador.<br>
       En QR dinámico: subcampo <strong>98</strong> = CUIT del administrador, subcampo <strong>99</strong> = usa API resolve.
     </span></div>
@@ -733,11 +656,11 @@ function rebuildBuildHTML(app){
     <div class="row2">
       <div class="field">
         <label><span class="tag">60</span> Merchant City <span class="pill req">REQ</span></label>
-        <input id="f60" maxlength="15" placeholder="Escribi para buscar..." value="${esc(s.city)}" autocomplete="off" oninput="buildState.city=this.value;showCitySearch(this.value)" onblur="setTimeout(function(){var d=document.getElementById('city-dd');if(d)d.style.display='none'},200)"><div id="city-dd" style="display:none;position:absolute;z-index:99;background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;width:100%;box-shadow:0 4px 20px rgba(0,0,0,.4)"></div>
+        <input id="f60" maxlength="15" placeholder="BUENOS AIRES" value="${esc(s.city)}">
       </div>
       <div class="field">
         <label><span class="tag">61</span> Código Postal <span class="pill ${isDyn?'req':'opt'}">${isDyn?'REQ':'OPC'}</span> <span class="hint">8 chars alfanum.</span></label>
-        <input id="f61" maxlength="8" placeholder="Se completa al elegir ciudad" value="${esc(s.postalCode)}">
+        <input id="f61" maxlength="8" placeholder="B1870BWA" value="${esc(s.postalCode)}">
         ${isDyn?'<p style="font-size:10px;color:var(--warn);margin-top:3px">Obligatorio en QR dinámico (CIMPRA 530). Formato alfanumérico 8 posiciones.</p>':''}
       </div>
     </div>
@@ -798,7 +721,7 @@ function rebuildBuildHTML(app){
     <div class="row2">
       <div class="field">
         <label><span class="tag">62.05</span> ID del QR / order.id <span class="pill cond">COND</span> <span class="info-pill">530</span> <span class="hint">Obligatorio si no usa API resolve. UUID recomendado.</span></label>
-        <div style="display:flex;gap:8px"><input id="f6205" maxlength="36" placeholder="a193244a-c224-4fc0-9ce3-b9defb43efb7" style="flex:1"><button onclick="var u=genUUID();buildState.qrId=u;document.getElementById('f6205').value=u" style="padding:0 12px;background:var(--accent);color:#000;border:none;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap">⚡ UUID</button></div>
+        <input id="f6205" maxlength="36" placeholder="a193244a-c224-4fc0-9ce3-b9defb43efb7">
       </div>
       <div class="field">
         <label><span class="tag">62.06</span> Customer Label <span class="pill opt">OPC</span></label>
@@ -870,18 +793,14 @@ function merchantTmplHTML(t,i,isDyn){
     <div class="field">
       <label><span class="tag">${t.templateId}.00</span> Dominio invertido del aceptador <span class="pill req">REQ</span> <span class="info-pill">525</span></label>
       <input value="${esc(t.guid)}" placeholder="ar.com.modo" oninput="buildState.merchantTemplates[${i}].guid=this.value">
-      <p style="font-size:10px;color:var(--muted);margin-top:3px">Siempre obligatorio. Ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.prisma</code></p>
+      <p style="font-size:10px;color:var(--muted);margin-top:3px">Siempre obligatorio. Ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.coelsa</code>, <code style="font-family:var(--mono)">com.prisma</code></p>
     </div>
     ${isDyn?`
     <div class="row2">
       <div class="field">
         <label><span class="tag">${t.templateId}.98</span> CUIT Administrador <span class="pill ${isDyn?'req':'opt'}">${isDyn?'REQ':'OPC'}</span> <span class="info-pill">530</span></label>
-        <select onchange="buildState.merchantTemplates[${i}].adminCuit=this.value">
-          <option value=''>-- Seleccionar --</option>
-          <option value='30717862453' ${t.adminCuit==='30717862453'?'selected':''}>30717862453 (Newpay)</option>
-          <option value='30692264785' ${t.adminCuit==='30692264785'?'selected':''}>30692264785 (Coelsa)</option>
-          <option value='33629749859' ${t.adminCuit==='33629749859'?'selected':''}>33629749859 (Link)</option>
-        </select>
+        <input value="${esc(t.adminCuit||'')}" maxlength="11" placeholder="30714100803" oninput="buildState.merchantTemplates[${i}].adminCuit=this.value" inputmode="numeric">
+        <p style="font-size:10px;color:var(--muted);margin-top:2px">CUIT 11 dígitos sin puntos ni guiones</p>
       </div>
       <div class="field">
         <label><span class="tag">${t.templateId}.99</span> Usa API resolve <span class="pill ${isDyn?'req':'opt'}">${isDyn?'REQ':'OPC'}</span> <span class="info-pill">530</span></label>
@@ -1041,16 +960,10 @@ function addUnreserved(){
 function showBuildErr(msg){const b=document.getElementById('build-err');b.textContent='⚠️ '+msg;b.style.display='block'}
 
 function doBuild(){
-  console.log('[doBuild] iniciando');
-  var errEl = document.getElementById('build-err');
-  var resEl = document.getElementById('build-result');
-  if(!errEl){ console.error('[doBuild] NO EXISTE build-err'); alert('Error: falta build-err en DOM'); return; }
-  if(!resEl){ console.error('[doBuild] NO EXISTE build-result'); alert('Error: falta build-result en DOM'); return; }
-  errEl.style.display='none';
-  resEl.innerHTML='';
+  document.getElementById('build-err').style.display='none';
+  document.getElementById('build-result').innerHTML='';
 
   const name=gv('f59'), city=gv('f60');
-  console.log('[doBuild] name='+name+' city='+city);
   if(!name){showBuildErr('Nombre del comercio obligatorio (campo 59)');return}
   if(!city){showBuildErr('Ciudad obligatoria (campo 60)');return}
   const isDyn=gv('f01')==='12';
@@ -1058,13 +971,13 @@ function doBuild(){
   if(isDyn&&!amount){showBuildErr('QR Dinámico requiere monto (campo 54) — CIMPRA 530');return}
   const postalCode=gv('f61');
   if(isDyn&&!postalCode){showBuildErr('QR Dinámico requiere código postal (campo 61) — CIMPRA 530');return}
-  const validMTs=buildState.merchantTemplates.filter(t=>t.guid&&t.guid.trim());
-  if(!validMTs.length){showBuildErr('Al menos un Merchant Account Template debe tener dominio invertido');return}
-
   // Validar 62.05 si no usa API resolve
   const qrId=gv('f6205');
   const noApiResolve = validMTs.every(t=>t.usaApiResolve==='0');
   if(noApiResolve&&!qrId){showBuildErr('Sin API resolve, el ID del QR (campo 62.05) es obligatorio. La billetera lo usa como order.id.');return}
+
+  const validMTs=buildState.merchantTemplates.filter(t=>t.guid&&t.guid.trim());
+  if(!validMTs.length){showBuildErr('Al menos un Merchant Account Template debe tener dominio invertido');return}
 
   let s = tlv('00','01') + tlv('01',gv('f01'));
 
@@ -1137,7 +1050,6 @@ function doBuild(){
 
   if(s.length>512) document.getElementById('build-err').innerHTML='⚠️ El payload supera 512 chars ('+s.length+'). Según EMV spec §4.1 es recomendable no excederlo.';
 
-  console.log('[doBuild] string generado, len='+s.length+' s='+s.substring(0,50));
   document.getElementById('build-result').innerHTML=`
     <div class="card" style="margin-top:12px">
       <div class="card-title">✅ QR Generado — ${s.length} chars ${s.length>512?'<span style="color:var(--warn)">⚠️ >512</span>':''}</div>
@@ -1173,156 +1085,44 @@ function doBuild(){
 // TAB: DECODIFICADOR
 // ══════════════════════════════════
 function renderDecode(app){
-  var hasBD = !!(window.BarcodeDetector);
-  // Android Chrome: BarcodeDetector disponible → cámara en tiempo real
-  // iOS/Safari/otros: no mostrar botón, el campo de texto es suficiente
-  var scanBtn = hasBD
-    ? '<button class="scan-btn" id="scan-toggle-btn" onclick="toggleScanner()"><span>\uD83D\uDCF7</span> Escanear con c\u00E1mara</button>'
-    : '';
-
-  var h = '';
-  h += '<div class="card">';
-  h += '<div class="card-title">&#128269; Decodificar QR EMV Argentina</div>';
-  h += scanBtn;
-  h += '<div id="scanner-wrapper">';
-  h += '<video id="scanner-video" autoplay playsinline muted></video>';
-  h += '<canvas id="scanner-canvas"></canvas>';
-  h += '<div class="scan-overlay"><div class="scan-frame"><div class="scan-line"></div></div></div>';
-  h += '</div>';
-  h += '<div class="scan-status" id="scan-status"></div>';
-  h += '<button class="stop-btn" id="stop-scan-btn" style="display:none" onclick="stopScanner()">&#9209; Detener c\u00E1mara</button>';
-  h += '<div class="divider"><span>o peg\u00E1 el string manualmente</span></div>';
-  h += '<div class="field"><textarea id="decode-input" rows="4" placeholder="000201010211260...6304XXXX"></textarea></div>';
-  h += '<button class="build-btn" onclick="doDecodeManual()">Decodificar string</button>';
-  h += '</div>';
-  h += '<div id="decode-result"></div>';
-  h += '<div class="card" style="margin-top:0">';
-  h += '<div class="card-title"><span class="etag">ID 63</span> Calculadora CRC16-CCITT</div>';
-  h += '<div class="alert info"><span>&#8505;</span><span>El CRC cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 d\u00EDgitos del valor final (EMV spec 4.7.3).</span></div>';
-  h += '<div class="field" style="margin-top:4px">';
-  h += '<label>String EMV hasta ...6304 inclusive</label>';
-  h += '<textarea id="crc-input" rows="4" placeholder="Peg\u00E1 el string hasta ...6304 (inclusive)"></textarea>';
-  h += '</div>';
-  h += '<button class="build-btn" onclick="doCalcCRC()">Calcular CRC16</button>';
-  h += '<div id="crc-result" style="display:none;margin-top:14px">';
-  h += '<p style="font-size:11px;color:var(--muted);margin-bottom:5px">Resultado (4 hex chars, may\u00FAsculas):</p>';
-  h += '<div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent);letter-spacing:.1em;background:#00d4aa11;border:1px solid #00d4aa33;border-radius:8px;padding:10px 16px;text-align:center;margin-bottom:10px" id="crc-value"></div>';
-  h += '<p style="font-size:11px;color:var(--muted);line-height:1.7">Polinomio: <span style="color:var(--accent2);font-family:var(--mono)">0x1021</span> &middot; Semilla: <span style="color:var(--accent2);font-family:var(--mono)">0xFFFF</span> &middot; Sin inversi\u00F3n &middot; UTF-8</p>';
-  h += '</div></div>';
-
-  app.innerHTML = h;
-}
-
-
-
-
-async function toggleScanner(){const w=document.getElementById('scanner-wrapper');if(w&&w.style.display==='block'){stopScanner();return}await startScanner()}
-async function startScanner(){
-  const w=document.getElementById('scanner-wrapper'),v=document.getElementById('scanner-video');
-  const btn=document.getElementById('scan-toggle-btn'),sb=document.getElementById('stop-scan-btn'),st=document.getElementById('scan-status');
-  if(!w)return;
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){st.textContent='❌ Browser sin soporte de cámara.';return}
-  st.textContent='Solicitando acceso…';
-  const tries=[{video:{facingMode:{exact:'environment'}}},{video:{facingMode:'environment'}},{video:true}];
-  let err=null;
-  for(const c of tries){try{scanStream=await navigator.mediaDevices.getUserMedia(c);break}catch(e){err=e;scanStream=null}}
-  if(!scanStream){const n=err?.name||'';st.innerHTML=(n==='NotAllowedError'||n==='PermissionDeniedError')?`<strong>Permiso denegado.</strong><br>Chrome: 🔒 → Cámara → Permitir → recargar. Safari: Ajustes → Safari → Cámara → Permitir.`:'❌ '+(err?.message||'No se pudo acceder.');return}
-  v.srcObject=scanStream;await v.play();
-  w.style.display='block';sb.style.display='block';btn.innerHTML='<span>📷</span> Cámara activa';st.textContent='Apuntá al QR…';scanLoop();
-}
-var _barcodeDetector = null;
-if(window.BarcodeDetector){
-  window.BarcodeDetector.getSupportedFormats().then(function(fmts){
-    if(fmts.indexOf('qr_code') >= 0){
-      _barcodeDetector = new window.BarcodeDetector({formats:['qr_code']});
-    }
-  }).catch(function(){});
-}
-
-function scanLoop(){
-  const v=document.getElementById('scanner-video'),cv=document.getElementById('scanner-canvas');
-  if(!scanStream||!v||!cv)return;
-  if(v.readyState!==v.HAVE_ENOUGH_DATA){scanRaf=requestAnimationFrame(scanLoop);return}
-
-  function onDetected(data){
-    const st=document.getElementById('scan-status');
-    if(st) st.textContent='✅ QR detectado!';
-    stopScanner();
-    const inp=document.getElementById('decode-input');
-    if(inp) inp.value=data;
-    renderDecodeResult(data);
-  }
-
-  if(_barcodeDetector){
-    // BarcodeDetector: pasar el video element directo — así funcionó
-    _barcodeDetector.detect(v).then(function(codes){
-      if(!scanStream) return;
-      if(codes && codes.length > 0 && codes[0].rawValue){
-        onDetected(codes[0].rawValue);
-      } else {
-        scanRaf = requestAnimationFrame(scanLoop);
-      }
-    }).catch(function(){
-      // fallback jsQR
-      cv.width=v.videoWidth; cv.height=v.videoHeight;
-      const ctx=cv.getContext('2d',{willReadFrequently:true});
-      ctx.drawImage(v,0,0,cv.width,cv.height);
-      const d=ctx.getImageData(0,0,cv.width,cv.height);
-      const code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
-      if(code&&code.data){ onDetected(code.data); }
-      else { scanRaf=requestAnimationFrame(scanLoop); }
-    });
-  } else {
-    // jsQR puro
-    cv.width=v.videoWidth; cv.height=v.videoHeight;
-    const ctx=cv.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(v,0,0,cv.width,cv.height);
-    const d=ctx.getImageData(0,0,cv.width,cv.height);
-    const code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});
-    if(code&&code.data){ onDetected(code.data); }
-    else { scanRaf=requestAnimationFrame(scanLoop); }
-  }
-}
-function stopScanner(){
-  if(scanRaf){cancelAnimationFrame(scanRaf);scanRaf=null}
-  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
-  const w=document.getElementById('scanner-wrapper'),sb=document.getElementById('stop-scan-btn'),btn=document.getElementById('scan-toggle-btn');
-  if(w)w.style.display='none';if(sb)sb.style.display='none';if(btn)btn.innerHTML='<span>📷</span> Escanear con cámara';
-}
-
-// ══════════════════════════════════
-// TAB: CRC16
-// ══════════════════════════════════
-function renderCRC(app){
   app.innerHTML=`
   <div class="card">
-    <div class="card-title"><span class="etag">ID 63</span> CRC16-CCITT (XMODEM)</div>
-    <div class="alert info"><span>ℹ️</span><span>Cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 dígitos del valor final (EMV spec §4.7.3).</span></div>
+    <div class="card-title">🔍 Decodificar QR EMV Argentina</div>
+    <button class="scan-btn" id="scan-toggle-btn" onclick="toggleScanner()"><span>📷</span> Escanear con cámara</button>
+    <div id="scanner-wrapper">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <canvas id="scanner-canvas"></canvas>
+      <div class="scan-overlay"><div class="scan-frame"><div class="scan-line"></div></div></div>
+    </div>
+    <div class="scan-status" id="scan-status"></div>
+    <button class="stop-btn" id="stop-scan-btn" style="display:none" onclick="stopScanner()">⏹ Detener cámara</button>
+    <div class="divider"><span>o pegá el string manualmente</span></div>
+    <div class="field"><textarea id="decode-input" rows="4" placeholder="000201010211260...6304XXXX"></textarea></div>
+    <button class="build-btn" onclick="doDecodeManual()">Decodificar string</button>
+  </div>
+  <div id="decode-result"></div>
+
+  <div class="card" style="margin-top:0">
+    <div class="card-title"><span class="etag">ID 63</span> Calculadora CRC16-CCITT</div>
+    <div class="alert info"><span>&#8505;&#65039;</span><span>El CRC cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 digitos del valor final (EMV spec 4.7.3).</span></div>
     <div class="field" style="margin-top:4px">
-      <label>String EMV hasta <code style="font-family:var(--mono);font-size:11px">...6304</code> inclusive</label>
-      <textarea id="crc-input" rows="5" placeholder="Pegá el string hasta ...6304 (inclusive)"></textarea>
+      <label>String EMV hasta ...6304 inclusive</label>
+      <textarea id="crc-input" rows="4" placeholder="Pega el string hasta ...6304 (inclusive)"></textarea>
     </div>
     <button class="build-btn" onclick="doCalcCRC()">Calcular CRC16</button>
-    <div id="crc-result" style="display:none;margin-top:12px">
-      <p style="font-size:11px;color:var(--muted);margin-bottom:5px">Resultado (4 hex chars, mayúsculas):</p>
-      <div class="crc-badge" id="crc-value"></div>
-      <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7">
-        Polinomio: <span style="color:var(--accent2);font-family:var(--mono)">0x1021</span> (ISO/IEC 13239)&nbsp;·&nbsp;
-        Semilla: <span style="color:var(--accent2);font-family:var(--mono)">0xFFFF</span>&nbsp;·&nbsp;
-        Sin inversión&nbsp;·&nbsp;Encoding: UTF-8
+    <div id="crc-result" style="display:none;margin-top:14px">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:5px">Resultado (4 hex chars, mayusculas):</p>
+      <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent);letter-spacing:.1em;background:#00d4aa11;border:1px solid #00d4aa33;border-radius:8px;padding:10px 16px;text-align:center;margin-bottom:10px" id="crc-value"></div>
+      <p style="font-size:11px;color:var(--muted);line-height:1.7">
+        Polinomio: <span style="color:var(--accent2);font-family:var(--mono)">0x1021</span> &middot;
+        Semilla: <span style="color:var(--accent2);font-family:var(--mono)">0xFFFF</span> &middot;
+        Sin inversion &middot; UTF-8
       </p>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-title">📐 Algoritmo paso a paso</div>
-    <div class="steps">
-      <div class="step"><div class="step-num">1</div><div class="step-body"><h4>String completo sin el valor del CRC</h4><p>Todos los campos TLV en orden.</p><div class="code-sample">000201010211260...<strong>6304</strong></div></div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-body"><h4>CRC16-CCITT (XMODEM)</h4><p>Polinomio <code style="font-family:var(--mono)">0x1021</code>, semilla <code style="font-family:var(--mono)">0xFFFF</code>, sin reflexión.</p></div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-body"><h4>4 chars HEX uppercase</h4><div class="code-sample">0x007B → "007B"</div></div></div>
-      <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Concatenar al final</h4><div class="code-sample">...6304<strong>1A3F</strong></div></div></div>
-    </div>
-  </div>`;
+  </div>\
+    </div>`;
 }
+
 function doDecodeManual(){
   const raw=(document.getElementById('decode-input').value||'').trim();
   if(raw) renderDecodeResult(raw);
@@ -1374,7 +1174,7 @@ const SDESC={
   '96':'PAYMENT_METHODS_ALLOWED (CIMPRA 540): 1er dígito=PCT, 2do=Tarjeta. 11=ambos, 10=solo PCT, 01=solo tarjeta',
   '97':'MAX_BINS_ALLOWED (CIMPRA 540): 01=1 bin (usuario elige), 02-99=N bines',
   '98':'CUIT del Administrador del esquema – 11 dígitos (CIMPRA 530)',
-  '99':'Usa API resolve – 0=no, 1=sí (CIMPRA 530)',
+  '99':'Usa API resolve (CIMPRA 530) — 00=no usa IEP, 01=usa IEP (2 digitos en practica)',
 };
 
 const TEMPLATE_IDS=new Set([...[...Array(24)].map((_,i)=>String(i+26).padStart(2,'0')),'50','51','62','64',...[...Array(20)].map((_,i)=>String(i+80).padStart(2,'0'))]);
@@ -1406,13 +1206,14 @@ function renderDecodeResult(raw){
     for(const t of mtTemplates){
       const sub98=t.children&&t.children.find(c=>c.id==='98');
       const sub99=t.children&&t.children.find(c=>c.id==='99');
-      if(sub99) hints.push(`Template ${t.id}: API resolve=${sub99.val==='1'?'SÍ':'NO'} (CIMPRA 530)`);
-      if(sub98) hints.push(`Template ${t.id}: Admin CUIT=${sub98.val} (CIMPRA 530)`);
+      if(sub99) hints.push('Template '+t.id+': API resolve='+(sub99.val==='1'?'SI':'NO')+' (CIMPRA 530)');
+      if(sub98) hints.push('Template '+t.id+': Admin CUIT='+sub98.val+' (CIMPRA 530)');
     }
   }
 
-  let html=`${hints.length?`<div class="alert ok"><span>🔎</span><span>${hints.join(' · ')}</span></div>`:''}
-  <div class="card"><div class="card-title">📋 Campos decodificados</div>
+    const hintsHTML=hints.length?'<div class="alert ok"><span>&#128269;</span><span>'+hints.join(' &middot; ')+'</span></div>':'';
+  let html=hintsHTML+`
+  <div class="card"><div class="card-title">&#128203; Campos decodificados</div>
     <div style="display:grid;grid-template-columns:42px 34px 1fr;gap:4px;padding:6px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:10px;color:var(--muted);font-weight:600">ID</span>
       <span style="font-size:10px;color:var(--muted);font-weight:600">LEN</span>
@@ -1459,7 +1260,57 @@ async function startScanner(){
   v.srcObject=scanStream;await v.play();
   w.style.display='block';sb.style.display='block';btn.innerHTML='<span>📷</span> Cámara activa';st.textContent='Apuntá al QR…';scanLoop();
 }
+var _barcodeDetector=null;
+if(window.BarcodeDetector){window.BarcodeDetector.getSupportedFormats().then(function(fmts){if(fmts.indexOf('qr_code')>=0)_barcodeDetector=new window.BarcodeDetector({formats:['qr_code']});}).catch(function(){});}
+function scanLoop(){
+  var v=document.getElementById('scanner-video'),cv=document.getElementById('scanner-canvas');
+  if(!scanStream||!v||!cv)return;
+  if(v.readyState!==v.HAVE_ENOUGH_DATA){scanRaf=requestAnimationFrame(scanLoop);return;}
+  function onDet(data){var st=document.getElementById('scan-status');if(st)st.textContent='✅ QR detectado!';stopScanner();var inp=document.getElementById('decode-input');if(inp)inp.value=data;renderDecodeResult(data);}
+  if(_barcodeDetector){_barcodeDetector.detect(v).then(function(codes){if(!scanStream)return;if(codes&&codes.length>0&&codes[0].rawValue){onDet(codes[0].rawValue);}else{scanRaf=requestAnimationFrame(scanLoop);}}).catch(function(){cv.width=v.videoWidth;cv.height=v.videoHeight;var ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(v,0,0,cv.width,cv.height);var d=ctx.getImageData(0,0,cv.width,cv.height);var code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});if(code&&code.data){onDet(code.data);}else{scanRaf=requestAnimationFrame(scanLoop);}});}
+  else{cv.width=v.videoWidth;cv.height=v.videoHeight;var ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(v,0,0,cv.width,cv.height);var d=ctx.getImageData(0,0,cv.width,cv.height);var code=jsQR(d.data,d.width,d.height,{inversionAttempts:'attemptBoth'});if(code&&code.data){onDet(code.data);}else{scanRaf=requestAnimationFrame(scanLoop);}}
+}
 
+function stopScanner(){
+  if(scanRaf){cancelAnimationFrame(scanRaf);scanRaf=null}
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
+  const w=document.getElementById('scanner-wrapper'),sb=document.getElementById('stop-scan-btn'),btn=document.getElementById('scan-toggle-btn');
+  if(w)w.style.display='none';if(sb)sb.style.display='none';if(btn)btn.innerHTML='<span>📷</span> Escanear con cámara';
+}
+
+// ══════════════════════════════════
+// TAB: CRC16
+// ══════════════════════════════════
+function renderCRC(app){
+  app.innerHTML=`
+  <div class="card">
+    <div class="card-title"><span class="etag">ID 63</span> CRC16-CCITT (XMODEM)</div>
+    <div class="alert info"><span>ℹ️</span><span>Cubre todo el string incluyendo el prefijo <code style="font-family:var(--mono);background:#0d1625;padding:1px 4px;border-radius:3px;color:var(--accent2)">6304</code> pero excluyendo los 4 dígitos del valor final (EMV spec §4.7.3).</span></div>
+    <div class="field" style="margin-top:4px">
+      <label>String EMV hasta <code style="font-family:var(--mono);font-size:11px">...6304</code> inclusive</label>
+      <textarea id="crc-input" rows="5" placeholder="Pegá el string hasta ...6304 (inclusive)"></textarea>
+    </div>
+    <button class="build-btn" onclick="doCalcCRC()">Calcular CRC16</button>
+    <div id="crc-result" style="display:none;margin-top:12px">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:5px">Resultado (4 hex chars, mayúsculas):</p>
+      <div class="crc-badge" id="crc-value"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7">
+        Polinomio: <span style="color:var(--accent2);font-family:var(--mono)">0x1021</span> (ISO/IEC 13239)&nbsp;·&nbsp;
+        Semilla: <span style="color:var(--accent2);font-family:var(--mono)">0xFFFF</span>&nbsp;·&nbsp;
+        Sin inversión&nbsp;·&nbsp;Encoding: UTF-8
+      </p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📐 Algoritmo paso a paso</div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><h4>String completo sin el valor del CRC</h4><p>Todos los campos TLV en orden.</p><div class="code-sample">000201010211260...<strong>6304</strong></div></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><h4>CRC16-CCITT (XMODEM)</h4><p>Polinomio <code style="font-family:var(--mono)">0x1021</code>, semilla <code style="font-family:var(--mono)">0xFFFF</code>, sin reflexión.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><h4>4 chars HEX uppercase</h4><div class="code-sample">0x007B → "007B"</div></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Concatenar al final</h4><div class="code-sample">...6304<strong>1A3F</strong></div></div></div>
+    </div>
+  </div>`;
+}
 function doCalcCRC(){
   const v=(document.getElementById('crc-input').value||'').trim();if(!v)return;
   document.getElementById('crc-value').textContent=crc16(v);
@@ -1654,7 +1505,7 @@ function renderAI(app){
       </div>
     </div>
 
-    <a href="https://notebooklm.google.com/notebook/a8b26537-adbc-4cca-ba45-46911eb68142" target="_blank" rel="noopener noreferrer"
+    <a href="NOTEBOOKLM_URL_AQUI" target="_blank" rel="noopener noreferrer"
        style="display:flex;align-items:center;justify-content:center;gap:12px;
               background:linear-gradient(135deg,#4285f4,#1a73e8);
               color:#fff;border:none;padding:16px 20px;border-radius:12px;
@@ -1699,7 +1550,64 @@ function renderAI(app){
 let wiz = {};
 
 function renderWizard(app){
-  // estado inicial
+  if(!wiz||!wiz.mode){
+    wiz={mode:null,step:0,answers:{}};
+    var h='';
+    h+='<div style="text-align:center;padding:24px 0 16px">';
+    h+='<div style="font-size:44px;margin-bottom:10px">&#129517;</div>';
+    h+='<div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px">¿Qué querés hacer?</div>';
+    h+='<div style="font-size:13px;color:var(--muted)">Elegí cómo queremos ayudarte</div></div>';
+    h+='<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px">';
+    h+='<div id="btn-biz" data-mode="biz" class="guided-opt" style="cursor:pointer;border:2px solid var(--border);border-radius:14px;padding:20px 18px;background:var(--card)">';
+    h+='<div style="display:flex;align-items:center;gap:14px"><span style="font-size:32px">&#127919;</span><div>';
+    h+='<div style="font-size:15px;font-weight:800;color:var(--text)">Descubrí tu combinación ideal</div>';
+    h+='<div style="font-size:12px;color:var(--muted);margin-top:3px">Contános tu modelo de negocio y te recomendamos el QR óptimo</div>';
+    h+='</div></div></div>';
+    h+='<div id="btn-build" data-mode="build" class="guided-opt" style="cursor:pointer;border:2px solid var(--border);border-radius:14px;padding:20px 18px;background:var(--card)">';
+    h+='<div style="display:flex;align-items:center;gap:14px"><span style="font-size:32px">&#128736;</span><div>';
+    h+='<div style="font-size:15px;font-weight:800;color:var(--text)">Construir mi QR</div>';
+    h+='<div style="font-size:12px;color:var(--muted);margin-top:3px">Ya sé qué tipo de QR necesito y quiero generarlo paso a paso</div>';
+    h+='</div></div></div>';
+    h+='<button id="btn-guided-next" disabled style="width:100%;padding:14px;background:var(--border);border:none;border-radius:12px;color:var(--muted);font-size:15px;font-weight:700;cursor:not-allowed">Continuar →</button>';
+    h+='</div>';
+    app.innerHTML=h;
+    var _guidedMode=null;
+    function _updateGuidedNext(){
+      var nb=document.getElementById('btn-guided-next');
+      if(!nb)return;
+      nb.disabled=!_guidedMode;
+      nb.style.background=_guidedMode?'var(--accent)':'var(--border)';
+      nb.style.color=_guidedMode?'#000':'var(--muted)';
+      nb.style.cursor=_guidedMode?'pointer':'not-allowed';
+    }
+    app.querySelectorAll('.guided-opt').forEach(function(el){
+      function pick(e){
+        e.preventDefault();
+        _guidedMode=el.dataset.mode;
+        app.querySelectorAll('.guided-opt').forEach(function(o){
+          var sel=o.dataset.mode===_guidedMode;
+          o.style.borderColor=sel?'var(--accent)':'var(--border)';
+          o.style.background=sel?'#00d4aa0a':'var(--card)';
+        });
+        _updateGuidedNext();
+      }
+      el.addEventListener('touchstart',pick,{passive:false});
+      el.addEventListener('click',pick);
+    });
+    var nextBtn=document.getElementById('btn-guided-next');
+    if(nextBtn)nextBtn.addEventListener('click',function(){
+      if(_guidedMode==='biz')startBizModel();
+      else if(_guidedMode==='build')startQRBuild();
+    });
+    return;
+  }
+  if(wiz.mode==='bizmodel'){renderBizStep();return;}
+  if(wiz.mode==='build'){
+    var root=document.getElementById('wiz-root');
+    if(!root){app.innerHTML='<div class="wiz-wrap" id="wiz-root"></div>';}
+    renderWizStep();return;
+  }
+  // inicializar modo build
   wiz = {
     step: 0,
     answers: {
@@ -1710,14 +1618,11 @@ function renderWizard(app){
       mccLabel: '',
       aceptadorDomain: '', // 26.00
       adminCuit: '',     // 26.98
-      usaApiResolve: '',  // 26.99
-      adminCuit: '',     // 26.98
+      usaApiResolve: '',  // 26.99 — se asigna en paso 6
       amount: '',        // 54
       postalCode: '',    // 61
       qrId: '',          // 62.05
       qrId: '',          // 62.05 — obligatorio sin API resolve
-      pointOfSale: '',    // 62.03 — opcional
-      terminalId: '',     // 62.07 — opcional
       terminalId: '',    // 62.07
       pointOfSale: '',   // 62.03
     }
@@ -1727,69 +1632,47 @@ function renderWizard(app){
 }
 
 // Definición de pasos
+// getSteps agrupado en 6 pasos
 function getSteps(){
-  const a = wiz.answers;
-  const isDyn = a.initMethod === '12';
-  const steps = [
+  var a = wiz.answers;
+  var isDyn = a.initMethod === '12';
+  var steps = [
 
-    // ── PASO 1: Tipo de QR ──
+    // PASO 1: Tipo de QR
     {
-      id: 'initMethod',
-      q: '¿Cómo vas a usar este QR?',
-      hint: 'El QR estático es ideal para imprimir en el mostrador. El dinámico se genera por transacción y puede incluir monto fijo.',
-      type: 'options',
-      options: [
-        {value:'11', title:'QR Estático', desc:'El mismo QR para múltiples pagos. Ideal para imprimir y pegar. El cliente ingresa el monto.'},
-        {value:'12', title:'QR Dinámico', desc:'Un QR por transacción. Incluye el monto fijo. Requiere sistema que lo genere cada vez.'},
+      id:'initMethod', type:'options',
+      q:'¿Cómo vas a usar este QR?',
+      hint:'El QR estático es ideal para imprimir. El dinámico se genera por transacción y puede incluir monto fijo.',
+      options:[
+        {value:'11',title:'QR Estático',desc:'El mismo QR para múltiples pagos. Ideal para imprimir y pegar. El cliente ingresa el monto.'},
+        {value:'12',title:'QR Dinámico',desc:'Un QR por transacción. Incluye el monto fijo. Requiere sistema que lo genere.'},
       ]
     },
 
-    // ── PASO 2: Datos del comercio (nombre + ciudad) ──
-    {
-      id: 'comercio',
-      q: 'Datos de tu comercio',
-      hint: 'Son los datos que ve el cliente cuando escanea el QR.',
-      type: 'comercio',
-    },
+    // PASO 2: Datos del comercio (nombre + ciudad)
+    {id:'comercio', type:'comercio', q:'Datos de tu comercio', hint:'Son los datos que ve el cliente cuando escanea el QR.'},
 
-    // ── PASO 3: Datos técnicos del aceptador (MCC + dominio) ──
-    {
-      id: 'aceptador',
-      q: 'Datos de tu aceptador',
-      hint: 'Tu banco, procesador o billetera te provee estos datos.',
-      type: 'aceptador',
-    },
+    // PASO 3: Datos del aceptador (MCC + dominio)
+    {id:'aceptador', type:'aceptador', q:'Datos de tu aceptador', hint:'Tu banco, procesador o billetera te provee estos datos.'},
 
-    // ── PASO 4: Configuración del esquema (CUIT admin + API resolve) ──
-    {
-      id: 'esquema',
-      q: 'Configuración del esquema de pagos',
-      hint: 'Datos del administrador del esquema y cómo resuelve la billetera el QR.',
-      type: 'esquema',
-    },
+    // PASO 4: Esquema (CUIT admin + API resolve)
+    {id:'esquema', type:'esquema', q:'Configuración del esquema de pagos', hint:'Datos del administrador del esquema y cómo resuelve la billetera el QR.'},
 
-    // ── PASO 5: CVU + QR ID (solo si no usa API resolve) ──
+    // PASO 5 (condicional): CVU + QR ID — solo si NO usa API resolve
     ...(a.usaApiResolve === '0' ? [{
-      id: 'sinIEP',
-      q: 'Datos para QR sin API resolve',
-      hint: 'Sin API resolve el QR debe ser autosuficiente: necesita el CVU/CBU y un ID único de transacción.',
-      type: 'sinIEP',
+      id:'sinIEP', type:'sinIEP', q:'Datos para QR sin API resolve',
+      hint:'Sin API resolve el QR debe ser autosuficiente: necesita el CVU/CBU y un ID único de transacción.'
     }] : []),
 
-    // ── PASO 6: Monto (si dinámico) + opcionales ──
+    // PASO 6: Extras (monto si dinámico + opcionales)
     {
-      id: 'extras',
+      id:'extras', type:'extras',
       q: isDyn ? 'Monto y datos opcionales' : 'Datos opcionales',
-      hint: isDyn
-        ? 'El monto es obligatorio en QR dinámico. El punto de venta y terminal son opcionales.'
-        : 'Datos opcionales de identificación del punto de venta.',
-      type: 'extras',
+      hint: isDyn ? 'El monto es obligatorio en QR dinámico.' : 'Datos opcionales de identificación del punto de venta.',
     },
-
   ];
   return steps;
 }
-
 
 
 
@@ -1843,157 +1726,103 @@ function renderWizStep(){
       <option value="">— Seleccioná tu rubro —</option>
       ${groups.map(g=>`<optgroup label="${g.label}">${g.items.map(i=>`<option value="${i.v}" ${wiz.answers.mccCode===i.v?'selected':''}>${i.v} – ${i.l}</option>`).join('')}</optgroup>`).join('')}
     </select>`;
-  } else if(s.type === 'qrId'){
-    var qrIdVal = esc(wiz.answers.qrId||'');
-    body = '<div style="display:flex;gap:8px;align-items:stretch">'
-         + '<input class="wiz-input" id="wiz-qrid-input" autocomplete="off"'
-         + ' placeholder="Ej: a193244a-c224-4fc0-9ce3-b9defb43efb7"'
-         + ' value="'+qrIdVal+'" maxlength="36"'
-         + ' oninput="wiz.answers.qrId=this.value"'
-         + ' style="flex:1;min-width:0">'
-         + '<button onclick="var u=genUUID();wiz.answers.qrId=u;var inp=document.getElementById(\'wiz-qrid-input\');if(inp)inp.value=u;" '
-         + ' style="padding:0 14px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">⚡ UUID</button>'
-         + '</div>'
-         + '<p style="font-size:10px;color:var(--muted);margin-top:6px">Tocá ⚡ UUID para generar uno automáticamente, o escribí tu propio identificador.</p>';
-  } else if(s.type === 'comercio'){
-    // Paso 2: nombre + ciudad
-    var nameVal = esc(wiz.answers.merchantName||'');
-    var cityVal = esc(wiz.answers.city||'');
-    var postalInfo = '';
-    if(wiz.answers.city && wiz.answers.postalCode){
-      postalInfo = '<div style="margin-top:6px;padding:8px 12px;background:#00d4aa15;border:1px solid var(--accent);border-radius:8px;display:flex;justify-content:space-between">'
-        + '<span style="color:var(--accent);font-weight:600;font-size:12px">'+esc(wiz.answers.city)+'</span>'
-        + '<span style="color:var(--accent2);font-family:var(--mono);font-size:11px">'+esc(wiz.answers.postalCode)+'</span>'
-        + '</div>';
+  } else if(s.type==='comercio'){
+    var nameVal=esc(wiz.answers.merchantName||'');
+    var cityVal=esc(wiz.answers.city||'');
+    var postalInfo='';
+    if(wiz.answers.city&&wiz.answers.postalCode){
+      postalInfo='<div style="margin-top:6px;padding:8px 12px;background:#00d4aa15;border:1px solid var(--accent);border-radius:8px;display:flex;justify-content:space-between">'
+        +'<span style="color:var(--accent);font-weight:600;font-size:12px">'+esc(wiz.answers.city)+'</span>'
+        +'<span style="color:var(--accent2);font-family:var(--mono);font-size:11px">'+esc(wiz.answers.postalCode)+'</span></div>';
     } else if(wiz.answers.city){
-      postalInfo = '<div class="field" style="margin-top:8px"><label style="font-size:11px;color:var(--muted)">Código postal de '+esc(wiz.answers.city)+' (CPA 8 chars)</label>'
-        + '<input class="wiz-input" id="wiz-postal-input" maxlength="8" placeholder="Ej: C1001AAA" value="'+esc(wiz.answers.postalCode||'')+'"'
-        + ' oninput="wiz.answers.postalCode=this.value.toUpperCase()" style="width:100%;margin-top:4px"></div>';
+      postalInfo='<div style="margin-top:8px"><label style="font-size:11px;color:var(--muted)">Código postal de '+esc(wiz.answers.city)+'</label>'
+        +'<input class="wiz-input" id="wiz-postal-input" maxlength="8" placeholder="Ej: C1001AAA" value="'+esc(wiz.answers.postalCode||'')+'" oninput="wiz.answers.postalCode=this.value.toUpperCase()" style="width:100%;margin-top:4px"></div>';
     }
-    body = '<div class="field" style="margin-bottom:12px">'
-         + '<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Nombre del comercio <span style="color:var(--err)">*</span></label>'
-         + '<input class="wiz-input" id="wiz-name-input" maxlength="25" placeholder="Ej: PANADERIA EL TRIGO" value="'+nameVal+'"'
-         + ' oninput="wiz.answers.merchantName=this.value.toUpperCase()" style="width:100%">'
-         + '<p style="font-size:10px;color:var(--muted);margin-top:3px">Máx 25 chars. Aparece en la app del cliente al escanear.</p>'
-         + '</div>'
-         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Ciudad <span style="color:var(--err)">*</span></label>'
-         + '<input class="wiz-input" id="wiz-city-input" autocomplete="off" placeholder="Escribi la ciudad..." value="'+cityVal+'"'
-         + ' oninput="wizCitySearch(this.value)" style="width:100%;margin-bottom:6px">'
-         + '<div id="wiz-city-results" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);display:none;margin-bottom:6px"></div>'
-         + postalInfo
-         + '</div>';
+    body='<div style="margin-bottom:12px">'
+        +'<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Nombre del comercio <span style="color:var(--err)">*</span></label>'
+        +'<input class="wiz-input" id="wiz-name-input" maxlength="25" placeholder="Ej: PANADERIA EL TRIGO" value="'+nameVal+'" oninput="wiz.answers.merchantName=this.value.toUpperCase()" style="width:100%">'
+        +'<p style="font-size:10px;color:var(--muted);margin-top:3px">Máx 25 chars. Aparece en la app del cliente al escanear.</p></div>'
+        +'<div><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Ciudad <span style="color:var(--err)">*</span></label>'
+        +'<input class="wiz-input" id="wiz-city-input" autocomplete="off" placeholder="Escribí la ciudad..." value="'+cityVal+'" oninput="wizCitySearch(this.value)" style="width:100%;margin-bottom:6px">'
+        +'<div id="wiz-city-results" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);display:none;margin-bottom:6px"></div>'
+        +postalInfo+'</div>';
+  } else if(s.type==='aceptador'){
+    var domVal=esc(wiz.answers.aceptadorDomain||'');
+    var mccHtml='<select id="wiz-mcc-select" class="wiz-input" style="width:100%" onchange="var o=this.options[this.selectedIndex];wiz.answers.mccCode=this.value;wiz.answers.mccLabel=o.text"><option value="">-- Seleccioná el rubro --</option>';
+    if(typeof MCC_LIST!=='undefined'){for(var mi=0;mi<MCC_LIST.length;mi++){var mm=MCC_LIST[mi];mccHtml+='<option value="'+mm.v+'"'+(wiz.answers.mccCode===String(mm.v)?' selected':'')+'>'+mm.l+'</option>';}}
+    mccHtml+='</select>';
+    body='<div style="margin-bottom:14px">'
+        +'<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Rubro (MCC) <span style="color:var(--err)">*</span></label>'
+        +mccHtml
+        +'</div>'
+        +'<div><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Dominio invertido del aceptador <span style="color:var(--err)">*</span></label>'
+        +'<input class="wiz-input" id="wiz-dom-input" maxlength="32" placeholder="Ej: ar.com.modo" value="'+domVal+'" oninput="wiz.answers.aceptadorDomain=this.value.toLowerCase()" style="width:100%">'
+        +'<p style="font-size:10px;color:var(--muted);margin-top:3px">Tu aceptador te provee este dato. Ej: <code>ar.com.modo</code></p></div>';
 
-  } else if(s.type === 'aceptador'){
-    // Paso 3: MCC + dominio invertido
-    var mccOpts = MCC_LIST ? MCC_LIST.slice(0,5) : [];
-    var mccVal = esc(wiz.answers.mccCode||'');
-    var mccLabel = esc(wiz.answers.mccLabel||'');
-    var domVal = esc(wiz.answers.aceptadorDomain||'');
-    body = '<div class="field" style="margin-bottom:12px">'
-         + '<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Rubro (MCC) <span style="color:var(--err)">*</span></label>'
-         + '<div id="wiz-mcc-zone"></div>'
-         + '</div>'
-         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Dominio invertido del aceptador <span style="color:var(--err)">*</span></label>'
-         + '<input class="wiz-input" id="wiz-dom-input" maxlength="32" placeholder="Ej: ar.com.modo" value="'+domVal+'"'
-         + ' oninput="wiz.answers.aceptadorDomain=this.value.toLowerCase()" style="width:100%">'
-         + '<p style="font-size:10px;color:var(--muted);margin-top:3px">Tu aceptador te provee este dato. Ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.prisma</code></p>'
-         + '</div>';
-
-  } else if(s.type === 'esquema'){
-    // Paso 4: CUIT admin + API resolve
-    var cuitSel = wiz.answers.adminCuit||'';
-    var apiSel = wiz.answers.usaApiResolve||'';
-    body = body = '<div class="field" style="margin-bottom:14px">'
-         + '<label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block">CUIT del administrador del esquema <span style="color:var(--err)">*</span></label>'
-         + '<select id="wiz-cuit-select" class="wiz-input" style="width:100%" onchange="wiz.answers.adminCuit=this.value">'
-         + '<option value="">-- Seleccioná el administrador --</option>'
-         + '<option value="30717862453" '+(cuitSel==='30717862453'?'selected':'')+'>30717862453 – Newpay</option>'
-         + '<option value="30692264785" '+(cuitSel==='30692264785'?'selected':'')+'>30692264785 – Coelsa</option>'
-         + '<option value="33629749859" '+(cuitSel==='33629749859'?'selected':'')+'>33629749859 – Link</option>'
-         + '</select></div>'
-         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block">¿Tu aceptador usa API resolve? <span style="color:var(--err)">*</span></label>'
-         + '<div style="display:flex;flex-direction:column;gap:8px">'
-         + [['1','Sí usa API resolve (99=01)','La billetera consulta al aceptador. Recomendado.'],
-            ['0','No usa API resolve (99=00)','QR autosuficiente. Requiere CVU embebido.']]
-           .map(function(x){
-             var sel=apiSel===x[0];
-             return '<div ontouchstart="wiz.answers.usaApiResolve=\''+x[0]+'\';renderWizStep()" '
-               + 'onclick="wiz.answers.usaApiResolve=\''+x[0]+'\';renderWizStep()" '
-               + 'style="padding:10px 14px;border-radius:10px;border:2px solid '+(sel?'var(--accent)':'var(--border)')+';background:'+(sel?'#00d4aa15':'var(--bg)')+';cursor:pointer">'
-               + '<div style="font-size:12px;font-weight:700;color:'+(sel?'var(--accent)':'var(--text)')+'">'+x[1]+'</div>'
-               + '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+x[2]+'</div>'
-               + '</div>';
-           }).join('')
-         + '</div></div>';
-
-  } else if(s.type === 'sinIEP'){
-    // Paso 5: CVU + QR ID (sin API resolve)
-    var cvuVal = esc(wiz.answers.cvu||'');
-    var qrIdVal = esc(wiz.answers.qrId||'');
-    body = '<div class="field" style="margin-bottom:12px">'
-         + '<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">CVU / CBU del aceptador <span style="color:var(--err)">*</span></label>'
-         + '<input class="wiz-input" id="wiz-cvu-input" maxlength="22" inputmode="numeric" placeholder="22 dígitos" value="'+cvuVal+'"'
-         + ' oninput="wiz.answers.cvu=this.value" style="width:100%">'
-         + '<p style="font-size:10px;color:var(--muted);margin-top:3px">Exactamente 22 dígitos numéricos. (CIMPRA 525, template 51)</p>'
-         + '</div>'
-         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">ID único del QR (62.05) <span style="color:var(--err)">*</span></label>'
-         + '<div style="display:flex;gap:8px">'
-         + '<input class="wiz-input" id="wiz-qrid-input" maxlength="36" placeholder="UUID o código propio" value="'+qrIdVal+'"'
-         + ' oninput="wiz.answers.qrId=this.value" style="flex:1;min-width:0">'
-         + '<button ontouchstart="var u=genUUID();wiz.answers.qrId=u;var el=document.getElementById(\'wiz-qrid-input\');if(el)el.value=u" '
-         + 'onclick="var u=genUUID();wiz.answers.qrId=u;var el=document.getElementById(\'wiz-qrid-input\');if(el)el.value=u" '
-         + 'style="padding:0 14px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">⚡ UUID</button>'
-         + '</div></div>';
-
-  } else if(s.type === 'extras'){
-    // Paso 6: monto (si dinámico) + opcionales
-    var isDyn6 = wiz.answers.initMethod === '12';
-    var amtVal = esc(wiz.answers.amount||'');
-    var posVal = esc(wiz.answers.pointOfSale||'');
-    var termVal = esc(wiz.answers.terminalId||'');
-    body = (isDyn6
-      ? '<div class="field" style="margin-bottom:12px">'
-        + '<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Monto de la transacción <span style="color:var(--err)">*</span></label>'
-        + '<input class="wiz-input" id="wiz-amount-input" inputmode="decimal" placeholder="Ej: 1500.00" value="'+amtVal+'"'
-        + ' oninput="wiz.answers.amount=this.value" style="width:100%">'
-        + '<p style="font-size:10px;color:var(--muted);margin-top:3px">Usar punto como separador decimal.</p>'
-        + '</div>'
-      : '')
-      + '<div style="background:#0d1625;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">'
-      + '<p style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Opcionales</p>'
-      + '<div class="field" style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Punto de venta / Sucursal</label>'
-      + '<input class="wiz-input" placeholder="Ej: SUCURSAL-CENTRO" value="'+posVal+'"'
-      + ' oninput="wiz.answers.pointOfSale=this.value" style="width:100%"></div>'
-      + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Terminal / Dispositivo POS</label>'
-      + '<input class="wiz-input" placeholder="Ej: TRM-001" value="'+termVal+'"'
-      + ' oninput="wiz.answers.terminalId=this.value" style="width:100%"></div>'
-      + '</div>';
-
-  } else if(s.type === 'extraOptional'){
-    var posVal = esc(wiz.answers.pointOfSale||'');
-    var termVal = esc(wiz.answers.terminalId||'');
-    body = '<div style="display:flex;flex-direction:column;gap:12px">'
-         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Punto de venta / Sucursal <span style="color:var(--muted)">(campo 62.03 — opcional)</span></label>'
-         + '<input class="wiz-input" placeholder="Ej: SUCURSAL-CENTRO" value="'+posVal+'"'
-         + ' oninput="wiz.answers.pointOfSale=this.value" style="width:100%"></div>'
-         + '<div class="field"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Terminal / Dispositivo POS <span style="color:var(--muted)">(campo 62.07 — opcional)</span></label>'
-         + '<input class="wiz-input" placeholder="Ej: TRM-001" value="'+termVal+'"'
-         + ' oninput="wiz.answers.terminalId=this.value" style="width:100%"></div>'
-         + '</div>';
-  } else if(s.type === 'citySearch'){
-    var cityVal = esc(wiz.answers.city||'');
-    var postalInfo = wiz.answers.city && wiz.answers.postalCode
-      ? '<div style="margin-top:10px;padding:10px 14px;background:#00d4aa15;border:1px solid var(--accent);border-radius:10px;display:flex;justify-content:space-between;align-items:center">'
-        + '<span style="color:var(--accent);font-weight:600;font-size:13px">'+esc(wiz.answers.city)+'</span>'
-        + '<span style="color:var(--accent2);font-family:var(--mono);font-size:12px">'+esc(wiz.answers.postalCode)+'</span>'
-        + '</div>'
-      : (wiz.answers.city ? '<p style="font-size:11px;color:var(--muted);margin-top:6px">Ciudad libre: <strong style="color:var(--text)">'+esc(wiz.answers.city)+'</strong> — ingresá el CPA en el siguiente paso.</p>' : '');
-    body = '<input class="wiz-input" id="wiz-city-input" autocomplete="off"'
-         + ' placeholder="Escribi la ciudad..." value="'+cityVal+'"'
-         + ' oninput="wizCitySearch(this.value)"'
-         + ' style="width:100%;margin-bottom:8px">'
-         + '<div id="wiz-city-results" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);display:none"></div>'
-         + postalInfo;
+  } else if(s.type==='esquema'){
+    var cuitSel=wiz.answers.adminCuit||'';
+    var apiSel=wiz.answers.usaApiResolve||'';
+    var cuitOpts=[['30717862453','Newpay'],['30692264785','Coelsa'],['33629749859','Link']];
+    var apiOpts=[['1','Sí usa API resolve (99=01)','La billetera consulta al aceptador.'],['0','No usa API resolve (99=00)','QR autosuficiente. Requiere CVU embebido.']];
+    body='<div style="margin-bottom:14px">'
+        +'<label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block">CUIT del administrador <span style="color:var(--err)">*</span></label>'
+        +'<select id="wiz-cuit-select" class="wiz-input" style="width:100%" onchange="wiz.answers.adminCuit=this.value">'
+        +'<option value="">-- Seleccioná el administrador --</option>';
+    cuitOpts.forEach(function(x){body+='<option value="'+x[0]+'"'+(cuitSel===x[0]?' selected':'')+'>'+x[0]+' – '+x[1]+'</option>';});
+    body+='</select></div>'
+        +'<div><label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block">¿Tu aceptador usa API resolve? <span style="color:var(--err)">*</span></label>'
+        +'<div style="display:flex;flex-direction:column;gap:8px">';
+    apiOpts.forEach(function(x){var sel=apiSel===x[0];body+='<div onclick="wiz.answers.usaApiResolve=\''+x[0]+'\';renderWizStep()" style="padding:10px 14px;border-radius:10px;border:2px solid '+(sel?'var(--accent)':'var(--border)')+';background:'+(sel?'#00d4aa15':'var(--bg)')+';cursor:pointer"><div style="font-size:12px;font-weight:700;color:'+(sel?'var(--accent)':'var(--text)')+'">'+x[1]+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+x[2]+'</div></div>';});
+    body+='</div></div>';
+  } else if(s.type==='sinIEP'){
+    var cvuVal=esc(wiz.answers.cvu||'');
+    var qrIdVal=esc(wiz.answers.qrId||'');
+    body='<div style="margin-bottom:12px">'
+        +'<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">CVU / CBU del aceptador <span style="color:var(--err)">*</span></label>'
+        +'<input class="wiz-input" id="wiz-cvu-input" maxlength="22" inputmode="numeric" placeholder="22 dígitos" value="'+cvuVal+'" oninput="wiz.answers.cvu=this.value" style="width:100%">'
+        +'<p style="font-size:10px;color:var(--muted);margin-top:3px">Exactamente 22 dígitos numéricos.</p></div>'
+        +'<div><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">ID único del QR (62.05) <span style="color:var(--err)">*</span></label>'
+        +'<div style="display:flex;gap:8px">'
+        +'<input class="wiz-input" id="wiz-qrid-input" maxlength="36" placeholder="UUID o código propio" value="'+qrIdVal+'" oninput="wiz.answers.qrId=this.value" style="flex:1;min-width:0">'
+        +'<button ontouchstart="var u=genUUID();wiz.answers.qrId=u;var el=document.getElementById(\'wiz-qrid-input\');if(el)el.value=u" onclick="var u=genUUID();wiz.answers.qrId=u;var el=document.getElementById(\'wiz-qrid-input\');if(el)el.value=u" style="padding:0 14px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">⚡ UUID</button>'
+        +'</div></div>';
+  } else if(s.type==='extras'){
+    var isDyn6=wiz.answers.initMethod==='12';
+    var amtVal=esc(wiz.answers.amount||'');
+    var posVal=esc(wiz.answers.pointOfSale||'');
+    var termVal=esc(wiz.answers.terminalId||'');
+    body=(isDyn6
+      ?'<div style="margin-bottom:12px">'
+        +'<label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Monto <span style="color:var(--err)">*</span></label>'
+        +'<input class="wiz-input" id="wiz-amount-input" inputmode="decimal" placeholder="Ej: 1500.00" value="'+amtVal+'" oninput="wiz.answers.amount=this.value" style="width:100%">'
+        +'<p style="font-size:10px;color:var(--muted);margin-top:3px">Usar punto como separador decimal.</p></div>'
+      :'')
+      +'<div style="background:#0d1625;border:1px solid var(--border);border-radius:10px;padding:12px">'
+      +'<p style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase">Opcionales</p>'
+      +'<div style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Punto de venta / Sucursal</label>'
+      +'<input class="wiz-input" placeholder="Ej: SUCURSAL-CENTRO" value="'+posVal+'" oninput="wiz.answers.pointOfSale=this.value" style="width:100%"></div>'
+      +'<div><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Terminal / Dispositivo POS</label>'
+      +'<input class="wiz-input" placeholder="Ej: TRM-001" value="'+termVal+'" oninput="wiz.answers.terminalId=this.value" style="width:100%"></div>'
+      +'</div>';
+  } else if(s.type==='citySearch'){
+    var cityVal=esc(wiz.answers.city||'');
+    var postalInfo='';
+    if(wiz.answers.city&&wiz.answers.postalCode){
+      postalInfo='<div style="margin-top:6px;padding:8px 12px;background:#00d4aa15;border:1px solid var(--accent);border-radius:8px;display:flex;justify-content:space-between">'
+        +'<span style="color:var(--accent);font-weight:600;font-size:12px">'+esc(wiz.answers.city)+'</span>'
+        +'<span style="color:var(--accent2);font-family:var(--mono);font-size:11px">'+esc(wiz.answers.postalCode)+'</span></div>';
+    } else if(wiz.answers.city){
+      postalInfo='<div class="field" style="margin-top:8px">'
+        +'<label style="font-size:11px;color:var(--muted)">Código postal de '+esc(wiz.answers.city)+' (CPA 8 chars)</label>'
+        +'<input class="wiz-input" id="wiz-postal-input" maxlength="8" placeholder="Ej: C1001AAA" value="'+esc(wiz.answers.postalCode||'')+'">'
+        +'</div>';
+    }
+    body='<input class="wiz-input" id="wiz-city-input" autocomplete="off"'
+        +' placeholder="Escribí la ciudad..." value="'+cityVal+'"'
+        +' oninput="wizCitySearch(this.value)"'
+        +' style="width:100%;margin-bottom:8px">'
+        +'<div id="wiz-city-results" style="border-radius:10px;overflow:hidden;border:1px solid var(--border);display:none;margin-bottom:6px"></div>'
+        +postalInfo;
   } else {
     body = `<input class="wiz-input" id="wiz-input"
       type="text" inputmode="${s.inputmode||'text'}"
@@ -2026,115 +1855,78 @@ function renderWizStep(){
       </div>
     </div>`;
 
+  // Foco en el primer input disponible
   setTimeout(function(){
-    // Inicializar MCC select si el paso lo requiere
-    var mccZone = document.getElementById('wiz-mcc-zone');
-    if(mccZone && typeof MCC_LIST !== 'undefined'){
-      var sel = '<select id="wiz-mcc-select" class="wiz-input" style="width:100%" '
-              + 'onchange="var o=this.options[this.selectedIndex];wiz.answers.mccCode=this.value;wiz.answers.mccLabel=o.text">'
-              + '<option value="">-- Seleccioná el rubro --</option>';
-      for(var mi=0;mi<MCC_LIST.length;mi++){
-        var m=MCC_LIST[mi];
-        var msel = wiz.answers.mccCode===String(m.v)?'selected':'';
-        sel += '<option value="'+m.v+'" '+msel+'>'+m.l+'</option>';
-      }
-      sel += '</select>';
-      mccZone.innerHTML = sel;
-    }
-    var el=document.getElementById('wiz-input');
-    if(el) el.focus();
+    var el=document.getElementById('wiz-dom-input')||document.getElementById('wiz-name-input')||document.getElementById('wiz-input');
+    if(el)el.focus();
   },80);
 }
 
 function wizNext(){
-  const steps = getSteps();
-  const s = steps[wiz.step];
+  var steps=getSteps(), s=steps[wiz.step];
   if(!s) return;
 
-  // ── Validaciones por tipo de paso ──
-  if(s.type === 'options' && !wiz.answers[s.id]){
-    alert('Por favor elegí una opción para continuar.'); return;
+  if(s.type==='options' && !wiz.answers[s.id]){alert('Por favor elegí una opción.');return;}
+
+  if(s.type==='comercio'){
+    var ni=document.getElementById('wiz-name-input');
+    if(ni) wiz.answers.merchantName=ni.value.trim().toUpperCase();
+    if(!wiz.answers.merchantName){alert('El nombre del comercio es obligatorio.');return;}
+    var ci=document.getElementById('wiz-city-input');
+    if(ci&&ci.value.trim()) wiz.answers.city=ci.value.trim().toUpperCase();
+    if(!wiz.answers.city){alert('La ciudad es obligatoria.');return;}
+    if(!wiz.answers.postalCode){var pi=document.getElementById('wiz-postal-input');if(pi&&pi.value.trim())wiz.answers.postalCode=pi.value.trim().toUpperCase();}
+    if(wiz.answers.initMethod==='12'&&!wiz.answers.postalCode){alert('En QR dinámico el código postal es obligatorio.');return;}
   }
 
-  if(s.type === 'comercio'){
-    var nameInp = document.getElementById('wiz-name-input');
-    if(nameInp) wiz.answers.merchantName = nameInp.value.trim().toUpperCase();
-    if(!wiz.answers.merchantName){ alert('El nombre del comercio es obligatorio.'); return; }
-    var cityInp = document.getElementById('wiz-city-input');
-    if(cityInp && cityInp.value.trim()) wiz.answers.city = cityInp.value.trim().toUpperCase();
-    if(!wiz.answers.city){ alert('La ciudad es obligatoria.'); return; }
-    // Si ciudad escrita manualmente, verificar que tenga postal
-    if(!wiz.answers.postalCode){
-      var postalInp = document.getElementById('wiz-postal-input');
-      if(postalInp) wiz.answers.postalCode = postalInp.value.trim().toUpperCase();
-    }
-    // Guardar postal manual si existe
-    if(!wiz.answers.postalCode){
-      var postalInp = document.getElementById('wiz-postal-input');
-      if(postalInp && postalInp.value.trim()) wiz.answers.postalCode = postalInp.value.trim().toUpperCase();
-    }
-    // Postal obligatorio para dinámico
-    if(wiz.answers.initMethod === '12' && !wiz.answers.postalCode){
-      alert('En QR dinámico el código postal es obligatorio. Elegí la ciudad del buscador o ingresá el CPA manualmente.'); return;
-    }
+  if(s.type==='aceptador'){
+    var ms=document.getElementById('wiz-mcc-select');
+    if(ms&&ms.value) {wiz.answers.mccCode=ms.value;wiz.answers.mccLabel=ms.options[ms.selectedIndex]?ms.options[ms.selectedIndex].text:'';}
+    if(!wiz.answers.mccCode){alert('El rubro (MCC) es obligatorio. Seleccioná un rubro de la lista.');return;}
+    var di=document.getElementById('wiz-dom-input');
+    if(di) wiz.answers.aceptadorDomain=di.value.trim().toLowerCase();
+    var dom=wiz.answers.aceptadorDomain;
+    if(!dom){alert('El dominio invertido es obligatorio.');return;}
+    var parts=dom.split('.');
+    if(parts.length<2||parts.some(function(p){return p.length===0;})){alert('El dominio debe tener al menos dos segmentos. Ej: ar.com.modo');return;}
+    if(/[^a-zA-Z0-9._-]/.test(dom)){alert('El dominio solo puede contener letras, números, puntos y guiones.');return;}
+    var last=parts[parts.length-1],prev=parts.length>=2?parts[parts.length-2]:'';
+    var knownTLDs=['com','net','org','edu','gov','info','biz','io','co'];
+    var ccTLDs=['ar','br','mx','cl','uy','py','bo','pe','us','uk','es'];
+    if(knownTLDs.indexOf(last)!==-1){alert('Formato inválido: no puede terminar en .'+last+'. Usá el formato invertido. Ej: ar.com.modo');return;}
+    if(ccTLDs.indexOf(last)!==-1&&knownTLDs.indexOf(prev)!==-1){alert('Formato inválido: no puede terminar en .'+prev+'.'+last+'. Usá el formato invertido. Ej: ar.com.modo');return;}
   }
 
-  if(s.type === 'aceptador'){
-    var mccInp = document.getElementById('wiz-mcc-select');
-    if(mccInp){ wiz.answers.mccCode = mccInp.value; wiz.answers.mccLabel = mccInp.options[mccInp.selectedIndex].text; }
-    if(!wiz.answers.mccCode){ alert('El rubro (MCC) es obligatorio.'); return; }
-    var domInp = document.getElementById('wiz-dom-input');
-    if(domInp) wiz.answers.aceptadorDomain = domInp.value.trim().toLowerCase();
-    var dom = wiz.answers.aceptadorDomain;
-    if(!dom){ alert('El dominio invertido es obligatorio.'); return; }
-    var parts = dom.split('.');
-    if(parts.length < 2 || parts.some(function(p){ return p.length === 0; })){
-      alert('El dominio invertido debe tener al menos dos segmentos. Ej: ar.com.modo'); return;
-    }
-    if(/[^a-zA-Z0-9._-]/.test(dom)){
-      alert('El dominio solo puede contener letras, números, puntos y guiones.'); return;
-    }
-    // No puede terminar con TLD genérico (.com, .net, .org, .ar, etc)
-    // Regla: si el último segmento tiene 2 letras (.ar, .br), el anteúltimo no puede tener 3+ (.com.ar)
-    // Y no puede terminar directamente en 3+ letras (.com, .net, .org)
-    // Validar que no termine en TLD convencional conocido
-    var last = parts[parts.length-1];
-    var prev = parts.length >= 2 ? parts[parts.length-2] : '';
-    var knownTLDs = ['com','net','org','edu','gov','mil','int','info','biz','io','co'];
-    var ccTLDs = ['ar','br','mx','cl','uy','py','bo','pe','ec','ve','co','us','uk','es','fr','de','it','jp','cn'];
-    if(knownTLDs.indexOf(last) !== -1){
-      alert('Formato invalido: no puede terminar en .' + last + '. Usa el formato invertido. Ej: ar.com.modo (no modo.com)'); return;
-    }
-    if(ccTLDs.indexOf(last) !== -1 && knownTLDs.indexOf(prev) !== -1){
-      alert('Formato invalido: no puede terminar en .' + prev + '.' + last + '. Usa el formato invertido. Ej: ar.com.modo (no modo.com.ar)'); return;
+  if(s.type==='esquema'){
+    if(!wiz.answers.adminCuit){alert('Elegí el administrador del esquema.');return;}
+    if(!wiz.answers.usaApiResolve){alert('Indicá si tu aceptador usa API resolve.');return;}
+  }
+
+  if(s.type==='sinIEP'){
+    var cvui=document.getElementById('wiz-cvu-input');
+    if(cvui) wiz.answers.cvu=cvui.value.trim();
+    if(!/^[0-9]{22}$/.test(wiz.answers.cvu)){alert('El CVU/CBU debe tener exactamente 22 dígitos numéricos.');return;}
+    var qri=document.getElementById('wiz-qrid-input');
+    if(qri) wiz.answers.qrId=qri.value.trim();
+    if(!wiz.answers.qrId){alert('El ID del QR es obligatorio. Tocá ⚡ UUID para generar uno.');return;}
+  }
+
+  if(s.type==='extras'){
+    if(wiz.answers.initMethod==='12'){
+      var ai=document.getElementById('wiz-amount-input');
+      if(ai) wiz.answers.amount=ai.value.trim();
+      if(!wiz.answers.amount){alert('El monto es obligatorio en QR dinámico.');return;}
+      if(!wiz.answers.amount.includes('.')) wiz.answers.amount+='.00';
     }
   }
 
-  if(s.type === 'esquema'){
-    if(!wiz.answers.adminCuit){ alert('Elegí el administrador del esquema.'); return; }
-    if(!wiz.answers.usaApiResolve){ alert('Indicá si tu aceptador usa API resolve.'); return; }
-  }
+  if(s.type==='text' && !s.optional && !(wiz.answers[s.id]||'').trim()){alert('Este campo es obligatorio.');return;}
 
-  if(s.type === 'sinIEP'){
-    var cvuInp = document.getElementById('wiz-cvu-input');
-    if(cvuInp) wiz.answers.cvu = cvuInp.value.trim();
-    if(!/^[0-9]{22}$/.test(wiz.answers.cvu)){
-      alert('El CVU/CBU debe tener exactamente 22 dígitos numéricos.'); return;
-    }
-    var qrInp = document.getElementById('wiz-qrid-input');
-    if(qrInp) wiz.answers.qrId = qrInp.value.trim();
-    if(!wiz.answers.qrId){ alert('El ID del QR es obligatorio. Tocá ⚡ UUID para generar uno.'); return; }
-  }
-
-  if(s.type === 'extras'){
-    var isDyn = wiz.answers.initMethod === '12';
-    if(isDyn){
-      var amtInp = document.getElementById('wiz-amount-input');
-      if(amtInp) wiz.answers.amount = amtInp.value.trim();
-      if(!wiz.answers.amount){ alert('El monto es obligatorio en QR dinámico.'); return; }
-      var amt = wiz.answers.amount.includes('.') ? wiz.answers.amount : wiz.answers.amount + '.00';
-      wiz.answers.amount = amt;
-    }
+  if(s.type==='citySearch'){
+    var cityInp=document.getElementById('wiz-city-input');
+    if(cityInp&&cityInp.value.trim()) wiz.answers.city=cityInp.value.trim().toUpperCase();
+    if(!wiz.answers.city){alert('La ciudad es obligatoria.');return;}
+    if(!wiz.answers.postalCode){var pi2=document.getElementById('wiz-postal-input');if(pi2&&pi2.value.trim())wiz.answers.postalCode=pi2.value.trim().toUpperCase();}
   }
 
   wiz.step++;
@@ -2177,9 +1969,9 @@ function buildWizEMV(preview=false){
   if(a.initMethod)         tokens.push(tok('53', '032', 'ARS'));
   if(a.amount){const amtW=a.amount.includes('.')?a.amount:a.amount+'.00'; tokens.push(tok('54',amtW,'Monto'));}
   if(a.initMethod)         tokens.push(tok('58', 'AR', 'Argentina'));
-  if(a.merchantName)       tokens.push(tok('59', normalizeEMV(a.merchantName.trim()), 'Nombre comercio'));
-  if(a.city)               tokens.push(tok('60', normalizeEMV(a.city), 'Ciudad'));
-  if(a.postalCode) tokens.push(tok('61', normalizeEMV(a.postalCode), 'Código postal'));
+  if(a.merchantName)       tokens.push(tok('59', a.merchantName.trim(), 'Nombre comercio'));
+  if(a.city)               tokens.push(tok('60', a.city, 'Ciudad'));
+  if(isDyn && a.postalCode) tokens.push(tok('61', a.postalCode, 'Código postal'));
 
   // 62: additional data (solo si hay algo)
   let inner62 = '';
@@ -2258,12 +2050,13 @@ function renderWizFinal(){
   h += '</div>';
   h += '<div style="display:flex;gap:8px">';
   h += '<button class="build-btn" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text)" onclick="wiz.step=0;wiz.answers={initMethod:\'\',merchantName:\'\',city:\'\',mccCode:\'\',mccLabel:\'\',aceptadorDomain:\'\',adminCuit:\'\',usaApiResolve:\'\',cvu:\'\',qrId:\'\',amount:\'\',postalCode:\'\',pointOfSale:\'\',terminalId:\'\'};;renderWizStep()">&#8617; Empezar de nuevo</button>';
-  h += '<button class="build-btn" style="flex:1" onclick="showTab(\'build\',document.querySelectorAll(\'.tab-btn\')[1])">&#9881;&#65039; Ir al Constructor</button>';
+  h += '<button class="build-btn" style="flex:1" onclick="goToScenarios()">&#127919; Ver Escenarios</button>';
   h += '</div></div>';
 
   root.innerHTML = h;
 
   // Generar QR y asignar listeners DESPUÉS de que el DOM esté listo
+  window._lastWizEMV=emvStr;
   setTimeout(function(){
     renderQRWithLogo('wiz-qr-canvas', emvStr);
     var cb = document.getElementById('wiz-copy-btn');
@@ -2293,7 +2086,7 @@ const FAQ_DATA = [
     section: '🏦 Merchant Account Information (ID 26–49)',
     items: [
       {q:'¿Qué es el dominio invertido y por qué es obligatorio?',
-       a:'El dominio invertido (subcampo 00 del template 26-49) identifica al aceptador. La billetera lo usa como clave en la tabla de resolución para encontrar la URL de la API del aceptador. Siempre es obligatorio, tanto en QR estático como dinámico. Ejemplo: <code>ar.com.modo</code>, <code>com.prisma</code>, <code>com.prisma</code>. (CIMPRA 525)'},
+       a:'El dominio invertido (subcampo 00 del template 26-49) identifica al aceptador. La billetera lo usa como clave en la tabla de resolución para encontrar la URL de la API del aceptador. Siempre es obligatorio, tanto en QR estático como dinámico. Ejemplo: <code>ar.com.modo</code>, <code>com.coelsa</code>, <code>com.prisma</code>. (CIMPRA 525)'},
       {q:'¿Cuál es la diferencia entre el dominio invertido y una URL?',
        a:'La versión inicial del BCRA usaba una URL como <code>https://www.191.com.ar</code>. Los CIMPRA posteriores (525 en adelante) reemplazaron esto por un <strong>dominio invertido</strong>, que es más compacto y es la clave de búsqueda en la tabla de resolución. No pongas una URL completa en este campo.'},
       {q:'¿Qué es el subcampo 98 y cuándo es obligatorio?',
@@ -2372,7 +2165,7 @@ const FAQ_DATA = [
 ];
 
 function renderFAQ(app){
-  const notebookURL = 'https://notebooklm.google.com/notebook/a8b26537-adbc-4cca-ba45-46911eb68142';
+  const notebookURL = 'NOTEBOOKLM_URL_AQUI';
 
   // ── Secciones de referencia (de la Guía) ──
   const guideHTML = `
@@ -2502,8 +2295,11 @@ function renderFAQ(app){
     </div>`).join('');
 
   app.innerHTML = `
-  <div class="alert info"><span>&#8505;&#65039;</span><span>Preguntas frecuentes sobre construccion de QR para Transferencias 3.0 Argentina.</span></div>
-  ${sectionsHTML}`;
+  <div class="card">
+    <div class="card-title">&#10067; Preguntas Frecuentes</div>
+    <div class="alert info" style="margin-bottom:12px"><span>&#8505;&#65039;</span><span>Preguntas frecuentes sobre QR para Transferencias 3.0 Argentina.</span></div>
+    ${sectionsHTML}
+  </div>`;
 
   // Agregar secciones de referencia normativa
   app.innerHTML += guideHTML;
@@ -2787,355 +2583,320 @@ function renderAPI(app){
 }
 
 
-// ── INIT ──
-showTab('wizard',document.querySelector('.tab-btn'));
+// ══ BIZMODEL + SCENARIOS — todo definido ANTES del init ══
 
-// ══════════════════════════════════
-// TAB: ESCENARIOS
-// ══════════════════════════════════
+var bizStep = 0;
+var bizAnswers = {};
 
-function parseQRForScenarios(raw){
-  // Parsear TLV y extraer campos relevantes
-  raw = (raw||'').trim();
-  var result = {
-    raw: raw,
-    valid: false,
-    initMethod: null,   // '11'=estático, '12'=dinámico
-    usaIEP: null,       // true/false
-    hasAmount: false,
-    amount: null,
-    hasOrderId: false,
-    orderId: null,
-    hasCVU: false,
-    acceptsCard: false,
-    merchantName: null,
-    city: null,
-    mcc: null,
-    domain: null,
-    adminCuit: null,
-    templates: []
-  };
-  if(!raw || raw.length < 10) return result;
-
-  function parseTLV(s){
-    var i=0, out=[];
-    while(i<=s.length-4){
-      var tag=s.substring(i,i+2);
-      var len=parseInt(s.substring(i+2,i+4),10);
-      if(isNaN(len)||i+4+len>s.length) break;
-      out.push({tag:tag,len:len,val:s.substring(i+4,i+4+len)});
-      i+=4+len;
-    }
-    return out;
-  }
-
-  try {
-    var fields = parseTLV(raw);
-    result.valid = fields.length > 2;
-    fields.forEach(function(f){
-      if(f.tag==='01') result.initMethod = f.val;
-      if(f.tag==='52') result.mcc = f.val;
-      if(f.tag==='54'){ result.hasAmount=true; result.amount=f.val; }
-      if(f.tag==='59') result.merchantName = f.val;
-      if(f.tag==='60') result.city = f.val;
-      // Templates 26-49
-      if(parseInt(f.tag)>=26 && parseInt(f.tag)<=49){
-        var subs = parseTLV(f.val);
-        var tmpl = {id:f.tag, domain:'', adminCuit:'', usaIEP:false, acceptsCard:false};
-        subs.forEach(function(s){
-          if(s.tag==='00') tmpl.domain=s.val;
-          if(s.tag==='98') tmpl.adminCuit=s.val;
-          if(s.tag==='99') tmpl.usaIEP=(s.val==='01'||s.val==='1');
-          if(s.tag==='96' && s.val.indexOf('CARD')!==-1) tmpl.acceptsCard=true;
-        });
-        result.templates.push(tmpl);
-        if(tmpl.usaIEP) result.usaIEP=true;
-        if(tmpl.domain) result.domain=tmpl.domain;
-        if(tmpl.adminCuit) result.adminCuit=tmpl.adminCuit;
-      }
-      // Template 51 (CVU)
-      if(f.tag==='51') result.hasCVU=true;
-      // 62.05
-      if(f.tag==='62'){
-        var subs62=parseTLV(f.val);
-        subs62.forEach(function(s){
-          if(s.tag==='05'){ result.hasOrderId=true; result.orderId=s.val; }
-        });
-      }
-    });
-    if(result.usaIEP===null) result.usaIEP=false;
-  } catch(e){ result.valid=false; }
-  return result;
-}
-
-function getScenarioId(q){
-  var dyn = q.initMethod==='12';
-  var iep = q.usaIEP===true;
-  if(!dyn && !iep) return 1;
-  if(!dyn &&  iep) return 2;
-  if( dyn && !iep) return 3;
-  if( dyn &&  iep) return 4;
-  return 0;
-}
+var BIZ_STEPS = [
+  {id:'pventa',q:'¿Cómo es tu punto de venta?',opts:[
+    {v:'fisico',icon:'&#127978;',title:'Físico',desc:'Mostrador, mesa, local con presencia'},
+    {v:'online',icon:'&#127760;',title:'Online / E-commerce',desc:'Venta por web o app'},
+    {v:'mixto',icon:'&#128230;',title:'Mixto',desc:'Físico y online combinados'},
+  ]},
+  {id:'precios',q:'¿Los precios cambian frecuentemente?',opts:[
+    {v:'si',icon:'&#128201;',title:'Sí cambian',desc:'Por temporada, stock o promociones'},
+    {v:'no',icon:'&#128204;',title:'Son fijos',desc:'Precio estable en el tiempo'},
+  ]},
+  {id:'carrito',q:'¿Necesitás mostrar el detalle del pedido en la billetera?',opts:[
+    {v:'si',icon:'&#128722;',title:'Sí, quiero mostrar ítems',desc:'El cliente ve el detalle antes de pagar'},
+    {v:'no',icon:'&#128176;',title:'Solo el monto total',desc:'No necesito detallar los productos'},
+  ]},
+  {id:'qrtype',q:'¿Cuántos QR distintos usarás?',opts:[
+    {v:'uno',icon:'&#128247;',title:'Uno solo impreso',desc:'El mismo QR para todas las ventas'},
+    {v:'porTx',icon:'&#128290;',title:'Uno por transacción',desc:'El sistema genera un QR nuevo por venta'},
+  ]},
+  {id:'backend',q:'¿Tenés un backend/servidor disponible 24/7?',opts:[
+    {v:'si',icon:'&#128171;',title:'Sí, tengo infraestructura',desc:'Servidor propio siempre disponible'},
+    {v:'parcial',icon:'&#9888;&#65039;',title:'Sí pero no garantizo 100%',desc:'Puede tener caídas ocasionales'},
+    {v:'no',icon:'&#10060;',title:'No tengo servidor',desc:'Quiero algo simple sin backend propio'},
+  ]},
+  {id:'devoluciones',q:'¿Necesitás hacer devoluciones de pagos?',opts:[
+    {v:'si',icon:'&#128257;',title:'Sí, es importante',desc:'Debo poder devolver pagos a clientes'},
+    {v:'no',icon:'&#10060;',title:'No o raramente',desc:'No es un requisito clave'},
+  ]},
+];
 
 var SCENARIOS = {
-  1: {
-    title: 'Est\u00e1tico sin IEP',
-    subtitle: 'QR de mostrador simple',
-    color: '#6366f1',
-    icon: '\uD83C\uDFAA',
-    tags: ['Est\u00e1tico','Sin API Resolve','Monto libre'],
-    desc: 'El mismo QR sirve para m\u00FAltiples pagos. El cliente ingresa el monto en la billetera. No expira. Ideal para imprimir y pegar en el mostrador.',
-    caps: [
-      {icon:'\u2705',label:'Pagos ilimitados con el mismo QR',ok:true},
-      {icon:'\u2705',label:'No requiere backend propio',ok:true},
-      {icon:'\u2705',label:'Funciona sin conectividad del comercio',ok:true},
-      {icon:'\u26a0\ufe0f',label:'El cliente ingresa el monto (riesgo de error)',ok:'warn'},
-      {icon:'\u274c',label:'Sin monto fijo por transacci\u00f3n',ok:false},
-      {icon:'\u274c',label:'Sin trazabilidad (no hay order ID)',ok:false},
-      {icon:'\u274c',label:'Sin carrito de art\u00edculos',ok:false},
-      {icon:'\u274c',label:'Sin devoluciones autom\u00e1ticas',ok:false},
-      {icon:'\u274c',label:'Sin validaci\u00f3n del QR al escanear',ok:false},
-    ],
-    usecases: ['Kiosco','Almac\u00e9n','Feria','Mercado','Peaje','Colecci\u00f3n de fondos'],
-    iep_upgrade: 'Con IEP pod\u00e9s dinamizar el monto en cada escaneo sin cambiar el QR f\u00edsico. El backend puede fijar el precio, cargar un carrito y validar cada transacci\u00f3n.'
-  },
-  2: {
-    title: 'Est\u00e1tico con IEP',
-    subtitle: 'QR inteligente de mostrador',
-    color: '#00d4aa',
-    icon: '\uD83E\uDD16',
-    tags: ['Est\u00e1tico','Con API Resolve','Monto din\u00e1mico por backend'],
-    desc: 'El QR f\u00edsico nunca cambia, pero en cada escaneo la billetera consulta al backend del aceptador. El backend puede fijar el monto, cargar un carrito, validar el QR y hasta rechazarlo si ya fue usado.',
-    caps: [
-      {icon:'\u2705',label:'Pagos ilimitados con el mismo QR',ok:true},
-      {icon:'\u2705',label:'Monto fijado por el backend en cada scan',ok:true},
-      {icon:'\u2705',label:'Carrito de art\u00edculos visible en la billetera',ok:true},
-      {icon:'\u2705',label:'Validaci\u00f3n del QR en tiempo real',ok:true},
-      {icon:'\u2705',label:'Trazabilidad: el backend genera el order ID',ok:true},
-      {icon:'\u2705',label:'Devoluciones posibles (con order ID del backend)',ok:true},
-      {icon:'\u2705',label:'Puede rechazar el QR si est\u00e1 expirado o ya fue pagado',ok:true},
-      {icon:'\u2705',label:'Cambio de precio sin reimprimir el QR',ok:true},
-      {icon:'\u26a0\ufe0f',label:'Requiere backend siempre disponible',ok:'warn'},
-      {icon:'\u26a0\ufe0f',label:'Si el backend cae, el QR no funciona',ok:'warn'},
-    ],
-    usecases: ['Restaurante con men\u00FA cambiante','Mesa con QR fijo','Tur\u00edstico (precio por temporada)','Suscripci\u00f3n mensual','Lockers inteligentes'],
-    iep_upgrade: null
-  },
-  3: {
-    title: 'Din\u00e1mico sin IEP',
-    subtitle: 'QR por transacci\u00f3n autosuficiente',
-    color: '#f59e0b',
-    icon: '\uD83D\uDCB3',
-    tags: ['Din\u00e1mico','Sin API Resolve','Monto fijo en QR'],
-    desc: 'Cada pago genera un QR nuevo con el monto ya embebido. El QR es autosuficiente: contiene el CVU y el order ID. No necesita que el backend del comercio est\u00e9 disponible al momento del escaneo.',
-    caps: [
-      {icon:'\u2705',label:'Monto fijo e inalterable en el QR',ok:true},
-      {icon:'\u2705',label:'CVU embebido (template 51)',ok:true},
-      {icon:'\u2705',label:'Order ID en campo 62.05 para trazabilidad',ok:true},
-      {icon:'\u2705',label:'Devoluciones posibles (con order ID)',ok:true},
-      {icon:'\u2705',label:'Funciona aunque el backend est\u00e9 ca\u00eddo',ok:true},
-      {icon:'\u26a0\ufe0f',label:'Cada transacci\u00f3n requiere generar un QR nuevo',ok:'warn'},
-      {icon:'\u26a0\ufe0f',label:'El QR expira (definido por el aceptador)',ok:'warn'},
-      {icon:'\u274c',label:'Sin carrito de art\u00edculos',ok:false},
-      {icon:'\u274c',label:'Sin validaci\u00f3n al escanear',ok:false},
-    ],
-    usecases: ['E-commerce simple','Cobros por link','Factura con QR','Vending machines','Estacionamiento'],
-    iep_upgrade: 'Con IEP pod\u00e9s agregar carrito de art\u00edculos, validar el QR al escanear y controlar la expiraci\u00f3n desde el backend.'
-  },
-  4: {
-    title: 'Din\u00e1mico con IEP',
-    subtitle: 'QR de m\u00e1xima capacidad',
-    color: '#ec4899',
-    icon: '\uD83D\uDE80',
-    tags: ['Din\u00e1mico','Con API Resolve','Full features'],
-    desc: 'El escenario m\u00e1s completo. Cada transacci\u00f3n genera un QR nuevo. La billetera consulta al backend que puede confirmar monto, devolver el carrito detallado, validar el QR y controlarlo de extremo a extremo.',
-    caps: [
-      {icon:'\u2705',label:'Monto fijo + validado por el backend',ok:true},
-      {icon:'\u2705',label:'Carrito de art\u00edculos detallado visible en la billetera',ok:true},
-      {icon:'\u2705',label:'Trazabilidad completa con order ID',ok:true},
-      {icon:'\u2705',label:'Devoluciones posibles',ok:true},
-      {icon:'\u2705',label:'Validaci\u00f3n y expiraci\u00f3n controlada por el backend',ok:true},
-      {icon:'\u2705',label:'El backend puede modificar el monto al escanear',ok:true},
-      {icon:'\u2705',label:'Identificaci\u00f3n completa del aceptador y administrador',ok:true},
-      {icon:'\u26a0\ufe0f',label:'Requiere backend siempre disponible',ok:'warn'},
-      {icon:'\u26a0\ufe0f',label:'Cada transacci\u00f3n requiere generar un QR nuevo',ok:'warn'},
-      {icon:'\u26a0\ufe0f',label:'Mayor complejidad de integraci\u00f3n',ok:'warn'},
-    ],
-    usecases: ['E-commerce avanzado','POS integrado','Delivery','Supermercado','B2B con orden de compra','Factura electr\u00f3nica con QR'],
-    iep_upgrade: null
-  }
+  1:{title:'Estático sin IEP',subtitle:'QR de uso único con 62.05 fijo',color:'#6366f1',icon:'&#127914;',
+    tags:['Estático','Sin API Resolve','Uso único','62.05 obligatorio'],
+    desc:'El QR tiene un order.id fijo en el campo 62.05. Ese valor se quema al procesarse: el mismo QR string no puede volver a usarse. Cada transacción requiere un nuevo QR con un 62.05 distinto.',
+    caps:[{icon:'✅',label:'Order ID fijo en 62.05 — trazabilidad garantizada',ok:true},{icon:'✅',label:'CVU embebido en template 51',ok:true},{icon:'✅',label:'Devoluciones posibles',ok:true},{icon:'✅',label:'No requiere backend al escanear',ok:true},{icon:'⚠️',label:'Uso único: el QR se quema al pagar — generar uno nuevo por transacción',ok:'warn'},{icon:'❌',label:'Sin validación al escanear',ok:false},{icon:'❌',label:'Sin carrito de artículos',ok:false}],
+    usecases:['Cobro por link con QR','Factura con QR impreso','Pago presencial generado por sistema'],
+    iep_upgrade:'Con IEP el backend genera el order.id en cada /resolve. El mismo QR físico se vuelve reutilizable ilimitadamente — cada escaneo devuelve un order.id diferente sin quemar el QR.'},
+  2:{title:'Estático con IEP',subtitle:'QR físico reutilizable ilimitadamente',color:'#00d4aa',icon:'&#129302;',
+    tags:['Estático','Con API Resolve','Reutilizable ilimitado','order.id dinámico'],
+    desc:'El QR físico nunca se quema. En cada escaneo el backend devuelve un order.id diferente. El campo 62.05 NO es necesario en el QR. Control total: monto, carrito, validación y expiración.',
+    caps:[{icon:'✅',label:'QR físico reutilizable: infinitas transacciones con el mismo QR',ok:true},{icon:'✅',label:'order.id único por transacción generado por el backend en cada /resolve',ok:true},{icon:'✅',label:'No requiere 62.05 en el QR',ok:true},{icon:'✅',label:'Monto fijado por el backend',ok:true},{icon:'✅',label:'Carrito de artículos visible en la billetera',ok:true},{icon:'✅',label:'Validación en tiempo real',ok:true},{icon:'✅',label:'Devoluciones posibles',ok:true},{icon:'⚠️',label:'Requiere backend siempre disponible',ok:'warn'}],
+    usecases:['Restaurante con QR en mesa','Mostrador con precio variable','Suscripción mensual'],
+    iep_upgrade:null},
+  3:{title:'Dinámico sin IEP',subtitle:'QR de uso único autosuficiente',color:'#f59e0b',icon:'&#128179;',
+    tags:['Dinámico','Sin API Resolve','Uso único','Monto fijo en QR'],
+    desc:'Cada pago genera un QR nuevo con monto y 62.05 únicos embebidos. Al procesarse se quema el 62.05. Autosuficiente: no requiere backend al escanear.',
+    caps:[{icon:'✅',label:'Monto fijo embebido en el QR',ok:true},{icon:'✅',label:'CVU embebido en template 51',ok:true},{icon:'✅',label:'Order ID fijo en 62.05',ok:true},{icon:'✅',label:'Devoluciones posibles',ok:true},{icon:'✅',label:'Funciona aunque el backend esté caído',ok:true},{icon:'⚠️',label:'Uso único: el QR se quema al pagar',ok:'warn'},{icon:'❌',label:'Sin carrito de artículos',ok:false}],
+    usecases:['E-commerce simple','Cobros por link','Factura con QR','Vending machines'],
+    iep_upgrade:'Con IEP el backend genera un order.id único en cada /resolve. El mismo QR dinámico se vuelve reutilizable y ganarás carrito, validación y control de expiración.'},
+  4:{title:'Dinámico con IEP',subtitle:'QR de máxima capacidad',color:'#ec4899',icon:'&#128640;',
+    tags:['Dinámico','Con API Resolve','order.id dinámico','Full features'],
+    desc:'El escenario más completo. Cada transacción genera un QR nuevo. En cada escaneo el backend devuelve un order.id único. El campo 62.05 NO es necesario en el QR.',
+    caps:[{icon:'✅',label:'order.id único generado por el backend en cada /resolve',ok:true},{icon:'✅',label:'No requiere 62.05 en el QR',ok:true},{icon:'✅',label:'Monto confirmado por el backend',ok:true},{icon:'✅',label:'Carrito de artículos detallado',ok:true},{icon:'✅',label:'Trazabilidad + devoluciones',ok:true},{icon:'✅',label:'Validación y expiración controlada',ok:true},{icon:'⚠️',label:'Requiere backend siempre disponible',ok:'warn'},{icon:'⚠️',label:'Cada transacción requiere un QR nuevo',ok:'warn'}],
+    usecases:['E-commerce avanzado','POS integrado','Delivery','Supermercado'],
+    iep_upgrade:null}
 };
 
-function renderScenarios(app){
-  var h = '';
-  h += '<div class="card">';
-  h += '<div class="card-title">\uD83C\uDFAF Analizador de Escenarios</div>';
-  h += '<div class="alert info"><span>\u2139</span><span>Peg\u00e1 el string EMV de tu QR para ver qu\u00e9 escenarios de pago son compatibles y c\u00f3mo pod\u00e9s extenderlo.</span></div>';
-  h += '<div class="field" style="margin-top:8px"><textarea id="sc-input" rows="4" placeholder="Peg\u00e1 el string EMV aqu\u00ed...00020101021126..." style="font-family:var(--mono);font-size:11px"></textarea></div>';
-
-  // Botón escanear si BarcodeDetector disponible
-  if(window.BarcodeDetector){
-    h += '<div style="display:flex;gap:8px;margin-bottom:12px">';
-    h += '<button class="build-btn" style="flex:1" onclick="analyzeScenario()">&#128270; Analizar escenarios</button>';
-    h += '<button class="build-btn" style="flex:0;background:var(--card);border:1px solid var(--border);color:var(--text);padding:0 16px" onclick="startScenarioScan()">&#128247;</button>';
-    h += '</div>';
+function calcBizResult(){
+  var a=bizAnswers, usaIEP=false, isDyn=false, reasons=[];
+  if(a.carrito==='si'){usaIEP=true;reasons.push({ok:true,txt:'Necesitás carrito de artículos → requiere API resolve para devolver order.items'});}
+  if(a.precios==='si'&&a.backend!=='no'){usaIEP=true;reasons.push({ok:true,txt:'Los precios cambian → con IEP el backend puede fijar el monto en cada scan sin cambiar el QR'});}
+  if(a.backend==='no'){usaIEP=false;reasons.push({ok:false,txt:'Sin servidor propio no podés implementar API resolve → QR sin IEP'});}
+  if(a.backend==='parcial'&&!a.carrito){reasons.push({ok:'warn',txt:'El backend no garantiza disponibilidad → si cae el QR no funciona con IEP'});}
+  if(a.devoluciones==='si'){reasons.push({ok:true,txt:'Necesitás devoluciones → posible en ambos escenarios siempre que haya order.id'});}
+  if(a.qrtype==='uno'){
+    isDyn=false;
+    reasons.push({ok:true,txt:'Usás un solo QR impreso → QR estático'});
+    if(usaIEP)reasons.push({ok:true,txt:'Con IEP el mismo QR físico se vuelve reutilizable ilimitadamente (el backend genera un order.id nuevo en cada scan)'});
+    else reasons.push({ok:'warn',txt:'Sin IEP el QR se quema al pagar — deberás generar un QR nuevo por transacción'});
   } else {
-    h += '<button class="build-btn" style="margin-bottom:12px" onclick="analyzeScenario()">&#128270; Analizar escenarios</button>';
+    isDyn=true;
+    reasons.push({ok:true,txt:'Generás un QR por transacción → QR dinámico'});
   }
-
-  h += '<div id="sc-scanner" style="display:none;margin-bottom:12px">';
-  h += '<video id="sc-video" autoplay playsinline muted style="width:100%;border-radius:10px;background:#000;max-height:260px"></video>';
-  h += '<div id="sc-scan-status" style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px">Apunt\u00e1 al QR...</div>';
-  h += '<button class="build-btn" style="margin-top:8px;background:var(--card);border:1px solid var(--border);color:var(--text)" onclick="stopScenarioScan()">\u23f9 Detener</button>';
-  h += '</div>';
-
-  h += '</div>';
-  h += '<div id="sc-result"></div>';
-  app.innerHTML = h;
+  if(a.pventa==='online'||a.pventa==='mixto') reasons.push({ok:true,txt:'Venta online → QR dinámico recomendado para e-commerce'});
+  var scId=(!isDyn&&!usaIEP)?1:(!isDyn&&usaIEP)?2:(isDyn&&!usaIEP)?3:4;
+  return {scId:scId,usaIEP:usaIEP,isDyn:isDyn,reasons:reasons};
 }
 
-var _scStream = null;
-var _scRaf = null;
-var _scDetector = null;
-
-function startScenarioScan(){
-  var wrapper = document.getElementById('sc-scanner');
-  var v = document.getElementById('sc-video');
-  if(!wrapper||!v) return;
-  if(!window.BarcodeDetector) return;
-  if(!_scDetector) _scDetector = new window.BarcodeDetector({formats:['qr_code']});
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(stream){
-    _scStream = stream;
-    v.srcObject = stream;
-    wrapper.style.display = 'block';
-    v.play();
-    _scanScenarioLoop();
-  }).catch(function(){ alert('No se pudo acceder a la c\u00e1mara'); });
-}
-
-function _scanScenarioLoop(){
-  var v = document.getElementById('sc-video');
-  if(!_scStream||!v||!_scDetector) return;
-  if(v.readyState < 2){ _scRaf = requestAnimationFrame(_scanScenarioLoop); return; }
-  _scDetector.detect(v).then(function(codes){
-    if(!_scStream) return;
-    if(codes && codes.length > 0 && codes[0].rawValue){
-      stopScenarioScan();
-      var inp = document.getElementById('sc-input');
-      if(inp) inp.value = codes[0].rawValue;
-      analyzeScenario();
-    } else {
-      _scRaf = requestAnimationFrame(_scanScenarioLoop);
-    }
-  }).catch(function(){ _scRaf = requestAnimationFrame(_scanScenarioLoop); });
-}
-
-function stopScenarioScan(){
-  if(_scRaf){ cancelAnimationFrame(_scRaf); _scRaf=null; }
-  if(_scStream){ _scStream.getTracks().forEach(function(t){t.stop();}); _scStream=null; }
-  var w = document.getElementById('sc-scanner');
-  if(w) w.style.display='none';
-}
-
-function analyzeScenario(){
-  stopScenarioScan();
-  var raw = (document.getElementById('sc-input')||{}).value||'';
-  raw = raw.trim();
-  var res = document.getElementById('sc-result');
-  if(!res) return;
-  if(!raw){ res.innerHTML='<div class="alert warn"><span>\u26a0\ufe0f</span><span>Peg\u00e1 un string EMV primero.</span></div>'; return; }
-
-  var q = parseQRForScenarios(raw);
-  if(!q.valid){ res.innerHTML='<div class="alert warn"><span>\u26a0\ufe0f</span><span>El string no parece un QR EMV v\u00e1lido. Verific\u00e1 que est\u00e9 completo.</span></div>'; return; }
-
-  var scId = getScenarioId(q);
-  var sc = SCENARIOS[scId];
-  if(!sc){ res.innerHTML='<div class="alert warn"><span>\u26a0\ufe0f</span><span>No se pudo determinar el escenario.</span></div>'; return; }
-
-  var h = '';
-
-  // ── Header del QR ──
-  h += '<div class="card" style="border:2px solid '+sc.color+'">';
-  h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">';
-  h += '<span style="font-size:36px">'+sc.icon+'</span>';
-  h += '<div><div style="font-size:16px;font-weight:800;color:'+sc.color+'">Escenario '+scId+': '+sc.title+'</div>';
-  h += '<div style="font-size:12px;color:var(--muted)">'+sc.subtitle+'</div></div></div>';
-  // Tags
-  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';
-  sc.tags.forEach(function(t){
-    h += '<span style="background:'+sc.color+'22;border:1px solid '+sc.color+'44;color:'+sc.color+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">'+t+'</span>';
+function renderBizStep(){
+  var app=document.getElementById('app');if(!app)return;
+  if(bizStep>=BIZ_STEPS.length){renderBizResult(app);return;}
+  var s=BIZ_STEPS[bizStep],total=BIZ_STEPS.length,h='';
+  h+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px">';
+  for(var i=0;i<total;i++){
+    var done=i<bizStep,curr=i===bizStep;
+    var bg=done?'var(--accent)':curr?'var(--accent2)':'var(--border)';
+    var col=(done||curr)?'#000':'var(--muted)';
+    h+='<div style="width:28px;height:28px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">'+(done?'✓':(i+1))+'</div>';
+    if(i<total-1)h+='<div style="flex:1;height:2px;background:'+(done?'var(--accent)':'var(--border)')+';min-width:8px"></div>';
+  }
+  h+='</div>';
+  h+='<div class="wiz-card"><div style="font-size:10px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">PREGUNTA '+(bizStep+1)+' DE '+total+'</div>';
+  h+='<div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px;line-height:1.3">'+s.q+'</div>';
+  h+='<div id="biz-opts" style="display:flex;flex-direction:column;gap:10px">';
+  s.opts.forEach(function(opt){
+    var sel=(bizAnswers[s.id]===opt.v);
+    h+='<div data-val="'+opt.v+'" class="biz-opt" style="padding:14px 16px;border:2px solid '+(sel?'var(--accent)':'var(--border)')+';border-radius:12px;cursor:pointer;background:'+(sel?'#00d4aa0a':'var(--bg)')+'"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">'+opt.icon+'</span><div><div style="font-size:14px;font-weight:700;color:var(--text)">'+opt.title+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">'+opt.desc+'</div></div></div></div>';
   });
-  h += '</div>';
-  h += '<p style="font-size:12px;color:var(--muted);line-height:1.7">'+sc.desc+'</p>';
-  h += '</div>';
-
-  // ── Datos del QR detectados ──
-  h += '<div class="card">';
-  h += '<div class="card-title">&#128203; Datos detectados en el QR</div>';
-  var rows = [
-    ['Tipo', q.initMethod==='12'?'Din\u00e1mico (01=12)':'Est\u00e1tico (01=11)'],
-    ['API resolve (99)', q.usaIEP?'S\u00ed usa IEP (99=01)':'No usa IEP (99=00)'],
-    ['Monto (54)', q.hasAmount?'$ '+q.amount:'No embebido'],
-    ['Comercio (59)', q.merchantName||'\u2014'],
-    ['Ciudad (60)', q.city||'\u2014'],
-    ['MCC (52)', q.mcc||'\u2014'],
-    ['Dominio', q.domain||'\u2014'],
-    ['CUIT Admin (98)', q.adminCuit||'\u2014'],
-    ['CVU embebido (51)', q.hasCVU?'S\u00ed':'No'],
-    ['Order ID (62.05)', q.hasOrderId?q.orderId:'No presente'],
-  ];
-  h += '<div style="display:flex;flex-direction:column;gap:0">';
-  rows.forEach(function(r,i){
-    h += '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">';
-    h += '<span style="font-size:11px;color:var(--muted)">'+r[0]+'</span>';
-    h += '<span style="font-size:11px;color:var(--text);font-weight:500;text-align:right;max-width:60%;word-break:break-all">'+esc(r[1])+'</span>';
-    h += '</div>';
-  });
-  h += '</div></div>';
-
-  // ── Capacidades ──
-  h += '<div class="card">';
-  h += '<div class="card-title">&#9889; Capacidades de este QR</div>';
-  sc.caps.forEach(function(cap){
-    var bg = cap.ok===true?'#00d4aa0f':cap.ok==='warn'?'#f59e0b0f':'#ef44440f';
-    var border = cap.ok===true?'#00d4aa22':cap.ok==='warn'?'#f59e0b22':'#ef444422';
-    h += '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid '+border+';background:'+bg+';margin-bottom:6px">';
-    h += '<span style="font-size:16px;flex-shrink:0">'+cap.icon+'</span>';
-    h += '<span style="font-size:12px;color:var(--text);line-height:1.5">'+cap.label+'</span>';
-    h += '</div>';
-  });
-  h += '</div>';
-
-  // ── IEP upgrade si aplica ──
-  if(sc.iep_upgrade){
-    h += '<div class="card" style="border:1px solid #00d4aa44;background:#00d4aa08">';
-    h += '<div class="card-title" style="color:var(--accent)">\uD83D\uDE80 C\u00f3mo extenderlo con API resolve</div>';
-    h += '<p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">'+sc.iep_upgrade+'</p>';
-    // Mostrar capacidades que se ganan
-    var gained = SCENARIOS[scId===1?2:4];
-    if(gained){
-      h += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Lo que ganar\u00edas:</div>';
-      gained.caps.filter(function(c){return c.ok===true;}).slice(0,5).forEach(function(cap){
-        h += '<div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">';
-        h += '<span>\u2705</span><span style="font-size:12px;color:var(--muted)">'+cap.label+'</span></div>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;margin-top:16px">';
+  if(bizStep>0)h+='<button id="biz-back" style="padding:12px 18px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:13px;cursor:pointer">← Atrás</button>';
+  h+='<button id="biz-next" style="flex:1;padding:12px 18px;background:var(--accent);border:none;border-radius:10px;color:#000;font-size:14px;font-weight:700;cursor:pointer">Siguiente →</button>';
+  h+='</div></div>';
+  app.innerHTML=h;
+  app.querySelectorAll('.biz-opt').forEach(function(el){
+    function pick(e){
+      e.preventDefault();
+      bizAnswers[s.id]=el.dataset.val;
+      app.querySelectorAll('.biz-opt').forEach(function(o){
+        var isSel=o.dataset.val===bizAnswers[s.id];
+        o.style.borderColor=isSel?'var(--accent)':'var(--border)';
+        o.style.background=isSel?'#00d4aa0a':'var(--bg)';
       });
     }
-    h += '</div>';
-  }
-
-  // ── Casos de uso ──
-  h += '<div class="card">';
-  h += '<div class="card-title">&#127970; Casos de uso ideales</div>';
-  h += '<div style="display:flex;flex-wrap:wrap;gap:8px">';
-  sc.usecases.forEach(function(u){
-    h += '<span style="background:var(--bg);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--text)">'+u+'</span>';
+    el.addEventListener('touchstart',pick,{passive:false});
+    el.addEventListener('click',pick);
   });
-  h += '</div></div>';
-
-  res.innerHTML = h;
+  var nb=document.getElementById('biz-next');
+  if(nb)nb.addEventListener('click',function(){
+    if(!bizAnswers[s.id]){alert('Por favor elegí una opción para continuar.');return;}
+    bizStep++;renderBizStep();
+  });
+  var bb=document.getElementById('biz-back');
+  if(bb)bb.addEventListener('click',function(){bizStep--;renderBizStep();});
 }
 
+function renderBizResult(app){
+  var r=calcBizResult(),sc=SCENARIOS[r.scId],h='';
+  h+='<div class="card" style="border:2px solid '+sc.color+'"><div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">Tu combinación ideal es:</div>';
+  h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span style="font-size:40px">'+sc.icon+'</span><div>';
+  h+='<div style="font-size:20px;font-weight:800;color:'+sc.color+'">Escenario '+r.scId+': '+sc.title+'</div>';
+  h+='<div style="font-size:13px;color:var(--muted)">'+sc.subtitle+'</div></div></div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">';
+  sc.tags.forEach(function(t){h+='<span style="background:'+sc.color+'22;color:'+sc.color+';border:1px solid '+sc.color+'44;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">'+t+'</span>';});
+  h+='</div><p style="font-size:12px;color:var(--muted);line-height:1.7">'+sc.desc+'</p></div>';
+  h+='<div class="card"><div class="card-title">🤔 Por qué esta combinación</div>';
+  r.reasons.forEach(function(reason){
+    var icon=reason.ok===true?'✅':reason.ok==='warn'?'⚠️':'❌';
+    var bg=reason.ok===true?'#00d4aa0f':reason.ok==='warn'?'#f59e0b0f':'#ef44440f';
+    var border=reason.ok===true?'#00d4aa22':reason.ok==='warn'?'#f59e0b22':'#ef444422';
+    h+='<div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid '+border+';background:'+bg+';margin-bottom:6px"><span style="font-size:14px;flex-shrink:0">'+icon+'</span><span style="font-size:12px;color:var(--text);line-height:1.5">'+reason.txt+'</span></div>';
+  });
+  h+='</div>';
+  h+='<div class="card"><div class="card-title">⚡ Lo que tenés disponible</div>';
+  sc.caps.forEach(function(cap){var bg2=cap.ok===true?'#00d4aa0f':cap.ok==='warn'?'#f59e0b0f':'#ef44440f',b2=cap.ok===true?'#00d4aa22':cap.ok==='warn'?'#f59e0b22':'#ef444422';h+='<div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid '+b2+';background:'+bg2+';margin-bottom:6px"><span style="font-size:14px;flex-shrink:0">'+cap.icon+'</span><span style="font-size:12px;color:var(--text);line-height:1.5">'+cap.label+'</span></div>';});
+  h+='</div>';
+  h+='<div class="card"><div class="card-title">🏠 Casos de uso ideales</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
+  sc.usecases.forEach(function(u){h+='<span style="background:var(--bg);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--text)">'+u+'</span>';});
+  h+='</div></div>';
+  h+='<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">';
+  h+='<button id="biz-build-now" class="build-btn">🔧 Construir este QR ahora</button>';
+  h+='<button id="biz-restart" class="build-btn" style="background:var(--card);border:1px solid var(--border);color:var(--text)">↩ Volver a empezar</button>';
+  h+='</div>';
+  app.innerHTML=h;
+  var buildBtn=document.getElementById('biz-build-now');
+  if(buildBtn)buildBtn.addEventListener('click',function(){
+    var tabBtn=document.querySelector('.tab-btn[onclick*="wizard"]');
+    showTab('wizard',tabBtn);
+    startQRBuild();
+  });
+  var restBtn=document.getElementById('biz-restart');
+  if(restBtn)restBtn.addEventListener('click',function(){
+    bizStep=0;bizAnswers={};
+    wiz={mode:'bizmodel',step:0,answers:{}};
+    renderBizStep();
+  });
+}
+
+function startBizModel(){
+  bizStep=0;bizAnswers={};
+  wiz={mode:'bizmodel',step:0,answers:{}};
+  renderBizStep();
+}
+
+function startQRBuild(){
+  wiz={mode:'build',step:0,answers:{initMethod:'',merchantName:'',city:'',postalCode:'',mccCode:'',mccLabel:'',aceptadorDomain:'',adminCuit:'',usaApiResolve:'',cvu:'',qrId:'',amount:'',pointOfSale:'',terminalId:''}};
+  var app=document.getElementById('app');
+  if(app)app.innerHTML='<div class="wiz-wrap" id="wiz-root"></div>';
+  renderWizStep();
+}
+
+function parseQRForScenarios(raw){
+  raw=(raw||'').trim();
+  var result={raw:raw,valid:false,initMethod:null,usaIEP:null,hasAmount:false,amount:null,hasOrderId:false,orderId:null,hasCVU:false,merchantName:null,city:null,mcc:null,domain:null,adminCuit:null};
+  if(!raw||raw.length<10)return result;
+  function parseTLV(s){var i=0,out=[];while(i<=s.length-4){var tag=s.substring(i,i+2);var len=parseInt(s.substring(i+2,i+4),10);if(isNaN(len)||i+4+len>s.length)break;out.push({tag:tag,val:s.substring(i+4,i+4+len)});i+=4+len;}return out;}
+  try{
+    var fields=parseTLV(raw);result.valid=fields.length>2;
+    fields.forEach(function(f){
+      if(f.tag==='01')result.initMethod=f.val;if(f.tag==='52')result.mcc=f.val;
+      if(f.tag==='54'){result.hasAmount=true;result.amount=f.val;}
+      if(f.tag==='59')result.merchantName=f.val;if(f.tag==='60')result.city=f.val;
+      if(parseInt(f.tag)>=26&&parseInt(f.tag)<=49){parseTLV(f.val).forEach(function(s2){if(s2.tag==='00')result.domain=s2.val;if(s2.tag==='98')result.adminCuit=s2.val;if(s2.tag==='99')result.usaIEP=(s2.val==='01'||s2.val==='1');});}
+      if(f.tag==='51')result.hasCVU=true;
+      if(f.tag==='62')parseTLV(f.val).forEach(function(s2){if(s2.tag==='05'){result.hasOrderId=true;result.orderId=s2.val;}});
+    });
+    if(result.usaIEP===null)result.usaIEP=false;
+  }catch(e){result.valid=false;}
+  return result;
+}
+function getScenarioId(q){var dyn=q.initMethod==='12',iep=q.usaIEP===true;return(!dyn&&!iep)?1:(!dyn&&iep)?2:(dyn&&!iep)?3:4;}
+
+function renderJSONWithHighlight(obj,hlKeys,indent){
+  indent=indent||0;
+  var pad='  '.repeat(indent),pad2='  '.repeat(indent+1),lines=[];
+  if(Array.isArray(obj)){
+    if(!obj.length)return '<span style="color:#94a3b8">[]</span>';
+    lines.push('<span style="color:#94a3b8">[</span>');
+    obj.forEach(function(item,i){lines.push(pad2+renderJSONWithHighlight(item,hlKeys,indent+1)+(i<obj.length-1?',':''));});
+    lines.push(pad+'<span style="color:#94a3b8">]</span>');
+    return lines.join('\n');
+  }
+  if(typeof obj==='object'&&obj!==null){
+    var keys=Object.keys(obj);
+    lines.push('<span style="color:#94a3b8">{</span>');
+    keys.forEach(function(k,i){
+      var hl=hlKeys&&hlKeys.indexOf(k)!==-1;
+      var bg=hl?' style="background:#fbbf2415;border-radius:3px;display:inline-block;width:100%"':'';
+      lines.push(pad2+'<span'+bg+'><span style="color:'+(hl?'#fbbf24':'#93c5fd')+'">"'+k+'"</span><span style="color:#94a3b8">: </span>'+rJV(obj[k],hlKeys,indent+1,hl)+(i<keys.length-1?',':'')+'</span>');
+    });
+    lines.push(pad+'<span style="color:#94a3b8">}</span>');
+    return lines.join('\n');
+  }
+  return rJV(obj,hlKeys,indent,false);
+}
+function rJV(val,hlKeys,indent,hl){
+  var c2=hl?'#fbbf24':'#a3e635';
+  if(val===null)return '<span style="color:#94a3b8">null</span>';
+  if(typeof val==='boolean')return '<span style="color:#f87171">'+val+'</span>';
+  if(typeof val==='number')return '<span style="color:'+c2+'">'+val+'</span>';
+  if(typeof val==='string')return '<span style="color:'+c2+'">"'+val+'"</span>';
+  return renderJSONWithHighlight(val,hlKeys,indent);
+}
+function toggleExample(id){
+  var content=document.getElementById('ex-content-'+id),arrow=document.getElementById('ex-arrow-'+id);
+  if(!content)return;var isOpen=content.style.display!=='none';
+  document.querySelectorAll('[id^="ex-content-"]').forEach(function(el){el.style.display='none';});
+  document.querySelectorAll('[id^="ex-arrow-"]').forEach(function(el){el.textContent='▶';});
+  if(!isOpen){content.style.display='block';arrow.textContent='▼';content.scrollIntoView({behavior:'smooth',block:'nearest'});}
+}
+function getResolveExamples(scId,q){
+  var merchant=q.merchantName||'COMERCIO EJEMPLO',cuit=q.adminCuit||'30717862453',mcc=q.mcc||'5411',cvu='3220001805010551870013',oid='a193244a-c224-4fc0-9ce3-b9defb43efb7';
+  if(scId===1||scId===3)return [{title:'Sin API resolve',subtitle:'Este escenario no llama al /resolve. La billetera usa los datos del QR directamente.',noResolve:true}];
+  return [
+    {title:'Monto abierto — open_amount',subtitle:'El cliente ingresa el monto.',highlight:['status'],json:{status:'open_amount',administrator:{identification_number:cuit,name:'NEWPAY'},collector:{account:cvu,identification_number:'30717862453',mcc:mcc,name:merchant,postal_code:'C1001AAA'},order:{id:oid,items:[],total_amount:null},payment_methods_allowed:[{id:'PCT'}],additional_info:{}}},
+    {title:'Monto cerrado — closed_amount',subtitle:'El backend fija el monto.',highlight:['status','total_amount'],json:{status:'closed_amount',administrator:{identification_number:cuit,name:'NEWPAY'},collector:{account:cvu,identification_number:'30717862453',mcc:mcc,name:merchant,postal_code:'C1001AAA'},order:{id:oid,items:[],total_amount:4500.00},payment_methods_allowed:[{id:'PCT'}],additional_info:{}}},
+    {title:'Monto cerrado con carrito',subtitle:'El backend devuelve ítems del pedido.',highlight:['status','total_amount','items'],json:{status:'closed_amount',administrator:{identification_number:cuit,name:'NEWPAY'},collector:{account:cvu,identification_number:'30717862453',mcc:mcc,name:merchant,postal_code:'C1001AAA'},order:{id:oid,items:[{title:'Producto A',quantity:2,unit_price:1500.00,currency_id:'ARS'},{title:'Producto B',quantity:1,unit_price:1500.00,currency_id:'ARS'}],total_amount:4500.00},payment_methods_allowed:[{id:'PCT'}],additional_info:{}}},
+    {title:'Order ID dinámico',subtitle:'Mismo QR, order.id distinto en cada scan.',highlight:['id'],note:'El primer escaneo devolvió id: a193244a... El segundo devuelve id: f7a2b3c4... El backend genera un UUID fresco en cada llamada.',json:{status:'closed_amount',administrator:{identification_number:cuit,name:'NEWPAY'},collector:{account:cvu,identification_number:'30717862453',mcc:mcc,name:merchant,postal_code:'C1001AAA'},order:{id:'f7a2b3c4-d5e6-7890-abcd-ef1234567890',items:[],total_amount:3200.00},payment_methods_allowed:[{id:'PCT'}],additional_info:{}}}
+  ];
+}
+function renderResolveExamples(scId,q){
+  var examples=getResolveExamples(scId,q);
+  var h='<div class="card"><div class="card-title">📄 Ejemplos de respuesta del /resolve</div>';
+  if(examples[0]&&examples[0].noResolve){h+='<div class="alert info"><span>ℹ</span><span>'+examples[0].subtitle+'</span></div></div>';return h;}
+  h+='<p style="font-size:11px;color:var(--muted);margin-bottom:12px">Tocá un caso para ver el JSON. Las claves en <span style="color:#fbbf24;font-weight:700">amarillo</span> cambian entre escenarios.</p>';
+  examples.forEach(function(ex,i){
+    h+='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px">';
+    h+='<div onclick="toggleExample('+i+')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;background:var(--bg)">';
+    h+='<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+ex.title+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+ex.subtitle+'</div></div>';
+    h+='<span id="ex-arrow-'+i+'" style="color:var(--accent);font-size:14px;flex-shrink:0;margin-left:8px">▶</span></div>';
+    h+='<div id="ex-content-'+i+'" style="display:none;background:#0d1625;padding:14px;overflow-x:auto">';
+    h+='<pre style="font-family:var(--mono);font-size:10px;line-height:1.8;margin:0;white-space:pre-wrap;word-break:break-word">'+renderJSONWithHighlight(ex.json,ex.highlight,0)+'</pre>';
+    if(ex.note)h+='<div style="margin-top:10px;padding:8px 10px;background:#fbbf2415;border:1px solid #fbbf2433;border-radius:6px;font-size:11px;color:#fbbf24">💡 '+ex.note+'</div>';
+    h+='</div></div>';
+  });
+  return h+'</div>';
+}
+function renderScenarios(app){
+  var h='<div class="card"><div class="card-title">🎯 Analizador de Escenarios</div>';
+  h+='<div class="alert info"><span>ℹ</span><span>Pegá el string EMV de tu QR para ver qué escenarios de pago son compatibles.</span></div>';
+  h+='<div class="field" style="margin-top:8px"><textarea id="sc-input" rows="4" placeholder="Pegá el string EMV aquí..." style="font-family:var(--mono);font-size:11px"></textarea></div>';
+  if(window.BarcodeDetector){h+='<div style="display:flex;gap:8px;margin-bottom:12px"><button class="build-btn" style="flex:1" onclick="analyzeScenario()">🔍 Analizar</button><button class="build-btn" style="flex:0;background:var(--card);border:1px solid var(--border);color:var(--text);padding:0 16px" onclick="startScenarioScan()">📷</button></div>';}
+  else{h+='<button class="build-btn" style="margin-bottom:12px" onclick="analyzeScenario()">🔍 Analizar escenarios</button>';}
+  h+='<div id="sc-scanner" style="display:none;margin-bottom:12px"><video id="sc-video" autoplay playsinline muted style="width:100%;border-radius:10px;background:#000;max-height:260px"></video><div id="sc-scan-status" style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px">Apuntá al QR...</div><button class="build-btn" style="margin-top:8px;background:var(--card);border:1px solid var(--border);color:var(--text)" onclick="stopScenarioScan()">⏹ Detener</button></div></div><div id="sc-result"></div>';
+  app.innerHTML=h;
+}
+var _scStream=null,_scRaf=null,_scDetector=null;
+function startScenarioScan(){var w=document.getElementById('sc-scanner'),v=document.getElementById('sc-video');if(!w||!v||!window.BarcodeDetector)return;if(!_scDetector)_scDetector=new window.BarcodeDetector({formats:['qr_code']});navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(stream){_scStream=stream;v.srcObject=stream;w.style.display='block';v.play();_scanScLoop();}).catch(function(){alert('Sin acceso a la cámara');});}
+function _scanScLoop(){var v=document.getElementById('sc-video');if(!_scStream||!v||!_scDetector)return;if(v.readyState<2){_scRaf=requestAnimationFrame(_scanScLoop);return;}_scDetector.detect(v).then(function(codes){if(!_scStream)return;if(codes&&codes.length>0&&codes[0].rawValue){stopScenarioScan();var inp=document.getElementById('sc-input');if(inp)inp.value=codes[0].rawValue;analyzeScenario();}else{_scRaf=requestAnimationFrame(_scanScLoop);}}).catch(function(){_scRaf=requestAnimationFrame(_scanScLoop);});}
+function stopScenarioScan(){if(_scRaf){cancelAnimationFrame(_scRaf);_scRaf=null;}if(_scStream){_scStream.getTracks().forEach(function(t){t.stop();});_scStream=null;}var w=document.getElementById('sc-scanner');if(w)w.style.display='none';}
+function analyzeScenario(){
+  stopScenarioScan();
+  var raw=((document.getElementById('sc-input')||{}).value||'').trim();
+  var res=document.getElementById('sc-result');if(!res)return;
+  if(!raw){res.innerHTML='<div class="alert warn"><span>⚠️</span><span>Pegá un string EMV primero.</span></div>';return;}
+  var q=parseQRForScenarios(raw);
+  if(!q.valid){res.innerHTML='<div class="alert warn"><span>⚠️</span><span>El string no parece un QR EMV válido.</span></div>';return;}
+  var scId=getScenarioId(q),sc=SCENARIOS[scId];if(!sc)return;
+  var h='<div class="card" style="border:2px solid '+sc.color+'"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><span style="font-size:36px">'+sc.icon+'</span><div><div style="font-size:16px;font-weight:800;color:'+sc.color+'">Escenario '+scId+': '+sc.title+'</div><div style="font-size:12px;color:var(--muted)">'+sc.subtitle+'</div></div></div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';sc.tags.forEach(function(t){h+='<span style="background:'+sc.color+'22;color:'+sc.color+';border:1px solid '+sc.color+'44;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">'+t+'</span>';});h+='</div>';
+  h+='<p style="font-size:12px;color:var(--muted);line-height:1.7">'+sc.desc+'</p></div>';
+  h+='<div class="card"><div class="card-title">📋 Datos detectados</div><div style="display:flex;flex-direction:column">';
+  [['Tipo',q.initMethod==='12'?'Dinámico':'Estático'],['API resolve',q.usaIEP?'Sí (99=01)':'No (99=00)'],['Monto',q.hasAmount?'$ '+q.amount:'No embebido'],['Comercio',q.merchantName||'—'],['Ciudad',q.city||'—'],['MCC',q.mcc||'—'],['Dominio',q.domain||'—'],['CUIT Admin',q.adminCuit||'—'],['CVU',q.hasCVU?'Sí':'No'],['Order ID (62.05)',q.hasOrderId?q.orderId:'No presente']].forEach(function(r){h+='<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">'+r[0]+'</span><span style="font-size:11px;color:var(--text);font-weight:500;text-align:right;max-width:60%;word-break:break-all">'+esc(String(r[1]))+'</span></div>';});
+  h+='</div></div>';
+  h+='<div class="card"><div class="card-title">⚡ Capacidades</div>';sc.caps.forEach(function(cap){var bg=cap.ok===true?'#00d4aa0f':cap.ok==='warn'?'#f59e0b0f':'#ef44440f',border=cap.ok===true?'#00d4aa22':cap.ok==='warn'?'#f59e0b22':'#ef444422';h+='<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid '+border+';background:'+bg+';margin-bottom:6px"><span style="font-size:16px;flex-shrink:0">'+cap.icon+'</span><span style="font-size:12px;color:var(--text);line-height:1.5">'+cap.label+'</span></div>';});h+='</div>';
+  if(sc.iep_upgrade){var gained=SCENARIOS[scId===1?2:4];h+='<div class="card" style="border:1px solid #00d4aa44;background:#00d4aa08"><div class="card-title" style="color:var(--accent)">🚀 Cómo extenderlo con API resolve</div><p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">'+sc.iep_upgrade+'</p>';if(gained){h+='<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase">Lo que ganarías:</div>';gained.caps.filter(function(cp){return cp.ok===true;}).slice(0,5).forEach(function(cap){h+='<div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)"><span>✅</span><span style="font-size:12px;color:var(--muted)">'+cap.label+'</span></div>';});}h+='</div>';}
+  h+='<div class="card"><div class="card-title">🏠 Casos de uso ideales</div><div style="display:flex;flex-wrap:wrap;gap:8px">';sc.usecases.forEach(function(u){h+='<span style="background:var(--bg);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--text)">'+u+'</span>';});h+='</div></div>';
+  h+=renderResolveExamples(scId,q);
+  res.innerHTML=h;
+}
+function goToScenarios(){
+  var emv=window._lastWizEMV||'';
+  var btn=document.querySelector('.tab-btn[onclick*="scenarios"]');
+  showTab('scenarios',btn);
+  setTimeout(function(){var inp=document.getElementById('sc-input');if(inp&&emv){inp.value=emv;analyzeScenario();}},100);
+}
+
+
+// ── INIT ──
+showTab('wizard',document.querySelector('.tab-btn'));
 </script>
 </body>
 </html>
