@@ -598,7 +598,7 @@ function rebuildBuildHTML(app){
   <div class="card">
     <div class="card-title"><span class="etag">ID 26–49</span> Merchant Account Information <span class="info-pill">📋 CIMPRA 525/530/535/540</span></div>
     <div class="alert warn"><span>⚠️</span><span>
-      El <strong>dominio invertido</strong> en subcampo 00 identifica al aceptador (ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.coelsa</code>). 
+      El <strong>dominio invertido</strong> en subcampo 00 identifica al aceptador (ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.payway</code>). 
       La billetera lo usa como clave en la tabla de resolución de URL para encontrar la API del aceptador.<br>
       En QR dinámico: subcampo <strong>98</strong> = CUIT del administrador, subcampo <strong>99</strong> = usa API resolve.
     </span></div>
@@ -793,7 +793,7 @@ function merchantTmplHTML(t,i,isDyn){
     <div class="field">
       <label><span class="tag">${t.templateId}.00</span> Dominio invertido del aceptador <span class="pill req">REQ</span> <span class="info-pill">525</span></label>
       <input value="${esc(t.guid)}" placeholder="ar.com.modo" oninput="buildState.merchantTemplates[${i}].guid=this.value">
-      <p style="font-size:10px;color:var(--muted);margin-top:3px">Siempre obligatorio. Ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.coelsa</code>, <code style="font-family:var(--mono)">com.prisma</code></p>
+      <p style="font-size:10px;color:var(--muted);margin-top:3px">Siempre obligatorio. Ej: <code style="font-family:var(--mono)">ar.com.modo</code>, <code style="font-family:var(--mono)">com.payway</code>, <code style="font-family:var(--mono)">com.prisma</code></p>
     </div>
     ${isDyn?`
     <div class="row2">
@@ -1505,7 +1505,7 @@ function renderAI(app){
       </div>
     </div>
 
-    <a href="NOTEBOOKLM_URL_AQUI" target="_blank" rel="noopener noreferrer"
+    <a href="https://notebooklm.google.com/notebook/a8b26537-adbc-4cca-ba45-46911eb68142" target="_blank" rel="noopener noreferrer"
        style="display:flex;align-items:center;justify-content:center;gap:12px;
               background:linear-gradient(135deg,#4285f4,#1a73e8);
               color:#fff;border:none;padding:16px 20px;border-radius:12px;
@@ -1514,12 +1514,7 @@ function renderAI(app){
        onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
-      </svg>
-      Abrir asistente en NotebookLM
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="white" style="opacity:.7">
-        <path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
-      </svg>
-    </a>
+      </svg> &#129302; Abrir asistente en NotebookLM &#8599;</a>
     <p style="font-size:10px;color:var(--muted);text-align:center;line-height:1.6">
       Se abre en una nueva pestaña · No requiere cuenta de Google para consultar · 
       Las respuestas citan el documento y página de origen
@@ -2086,7 +2081,7 @@ const FAQ_DATA = [
     section: '🏦 Merchant Account Information (ID 26–49)',
     items: [
       {q:'¿Qué es el dominio invertido y por qué es obligatorio?',
-       a:'El dominio invertido (subcampo 00 del template 26-49) identifica al aceptador. La billetera lo usa como clave en la tabla de resolución para encontrar la URL de la API del aceptador. Siempre es obligatorio, tanto en QR estático como dinámico. Ejemplo: <code>ar.com.modo</code>, <code>com.coelsa</code>, <code>com.prisma</code>. (CIMPRA 525)'},
+       a:'El dominio invertido (subcampo 00 del template 26-49) identifica al aceptador. La billetera lo usa como clave en la tabla de resolución para encontrar la URL de la API del aceptador. Siempre es obligatorio, tanto en QR estático como dinámico. Ejemplo: <code>ar.com.modo</code>, <code>com.prisma</code>, <code>ar.com.payway</code>. (CIMPRA 525)'},
       {q:'¿Cuál es la diferencia entre el dominio invertido y una URL?',
        a:'La versión inicial del BCRA usaba una URL como <code>https://www.191.com.ar</code>. Los CIMPRA posteriores (525 en adelante) reemplazaron esto por un <strong>dominio invertido</strong>, que es más compacto y es la clave de búsqueda en la tabla de resolución. No pongas una URL completa en este campo.'},
       {q:'¿Qué es el subcampo 98 y cuándo es obligatorio?',
@@ -2198,7 +2193,7 @@ const FAQ_DATA = [
   }];
 
 function renderFAQ(app){
-  const notebookURL = 'NOTEBOOKLM_URL_AQUI';
+  const notebookURL = 'https://notebooklm.google.com/notebook/a8b26537-adbc-4cca-ba45-46911eb68142';
 
   // ── Secciones de referencia (de la Guía) ──
   const guideHTML = `
@@ -2347,7 +2342,7 @@ function renderFAQ(app){
   iaSection += 'style="display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(135deg,#4285f4,#1a73e8);';
   iaSection += 'color:#fff;border:none;padding:14px 20px;border-radius:12px;font-size:14px;font-weight:700;';
   iaSection += 'cursor:pointer;font-family:var(--sans);text-decoration:none;margin-bottom:14px">';
-  iaSection += '&#127311; Abrir asistente en NotebookLM &#8599;</a>';
+  iaSection += '&#129302; Abrir asistente en NotebookLM &#8599;</a>';
   iaSection += '<p style="font-size:10px;color:var(--muted);text-align:center;margin-bottom:16px">Se abre en nueva pestana &middot; Sin necesidad de cuenta &middot; Cita el documento y numero de pagina</p>';
   iaSection += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">&#128161; Tips para mejores respuestas</div>';
   var tips = [
